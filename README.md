@@ -1,2 +1,13 @@
-# user_login_signup_nodejs_mongodb
-user_login_signup_nodejs_mongodb
+
+## User Registration, User Login and Authorization process with JWT & Mongoose
+
+ 
+## Project setup
+```
+npm install
+```
+
+### Run
+```
+node server.js
+```
