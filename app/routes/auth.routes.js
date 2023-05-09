@@ -1,5 +1,6 @@
 const { verifySignUp } = require("../middlewares");
 const controller = require("../controllers/auth.controller");
+const fetch = require("../controllers/fetch.controller");
 
 module.exports = function(app) {
   app.use(function(req, res, next) {
@@ -25,5 +26,6 @@ module.exports = function(app) {
   
   app.post("/api/auth/signout", controller.signout);
   
+  app.post("/api/auth/fetch",fetch.fetch);
    
 };
