@@ -13,9 +13,9 @@ app.use(express.urlencoded({ extended: true }));
 
 const db = require("./app/models");
  
-
+//mongodb+srv://kunalclepr:3rIgEIz5Kr1xRz46@cluster0.rizr71l.mongodb.net/?retryWrites=true/registrationFormHeruko
 db.mongoose
-  .connect(`mongodb+srv://kunalclepr:3rIgEIz5Kr1xRz46@cluster0.rizr71l.mongodb.net/?retryWrites=true/registrationFormHeruko`, {
+  .connect(`mongodb+srv://nodejs-chrome:BAzcWPS9AgLdRAs6@linkedotter.yqoyoi1.mongodb.net/?retryWrites=true/registrationFormHeruko`, {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })
