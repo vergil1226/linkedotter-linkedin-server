@@ -21,17 +21,17 @@ module.exports = function(app) {
 
   app.use(express.json());
 
-  app.post('/fetch',phantom.apiCall);
+  app.post('/fetch',phantom.apiFetchSingleAgentRecords);
 
-  app.post('/fetchoutput',phantom.apiOut);
+  app.post('/fetchoutput',phantom.apiFetchoutput);
   
-  app.post('/fetchall',phantom.apiFet);
+  app.post('/fetchall',phantom.apiFetchall);
 
-  app.post('/delete',phantom.delete);
+  app.post('/delete',phantom.deleteAgentEntry);
 
-  app.post('/launch',phantom.launch);
+  app.post('/launch',phantom.launchAgentEntry);
 
-  app.post('/create',phantom.create);
+  app.post('/create',phantom.createAgent);
   
   
 };

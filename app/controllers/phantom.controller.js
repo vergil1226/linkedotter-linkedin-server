@@ -1,102 +1,17 @@
 const sdk = require('api')('@phantombuster/v1#1mld74kq6w8xui');
-  
 
-exports.delete =  (req,res) => {
-    // return res.send({"name":req.body});
-    sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
-    sdk.postAgentsDelete({id: req.body.id})//get this id from request
-      .then(({ data }) => {
-        res.send({
-            status : "successfuly deleted agent",
-            data:data
-          });
-         console.log(data)})
-      .catch(( err ) => 
-      {
-        res.send({
-          status : "error",
-          data:err
-        })
-        } 
-      );
+/*
+This API will create Agent for message scrapper, we need to pass name and linkedin cookie
+*/
 
-     
-}
-
-exports.launch = (req,res) =>
+exports.createAgent = (req,res) =>
 {
-    
-    sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
-    sdk.postAgentsLaunch({
-      id: req.body.id,
-    //   '5995136150519362',//get this id from request
-      argument: {
-        inboxFilter: 'all',
-        sessionCookie: req.body.sessionCookie,
-        //sessionCookie: 'AQEDAUMlUyQAOI1vAAABh-UbJmMAAAGILaZUx00AXOmk6TexIstJgJdA5zktbWkVpm9tkHbx5mQ9F0GomIEIMlS1XqljyD2qMZquQt7LhR934L_tHKaUm_8xeZW5HLwnVwy1Z2auClEvkrc7uREvmOEu',
-        before: '05-17-2023'
-      },
-      manualLaunch: true
-    })
-      .then(({ data }) => {
-         res.send({
-            status : "successfuly launched",
-            data:data
-          });
-        console.log(data)})
-      .catch(( err ) => 
-      {
-        res.send({
-          status : "error",
-          data:err
-        })
-        } 
-      );
-
-      
-} 
-
-exports.create = (req,res) =>
-{
-    
     sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
     sdk.postAgentsSave({
       repeatedLaunchTimes: {
         minute: [6],
         hour: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22],
-        day: [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11,
-          12,
-          13,
-          14,
-          15,
-          16,
-          17,
-          18,
-          19,
-          20,
-          21,
-          22,
-          23,
-          24,
-          25,
-          26,
-          27,
-          28,
-          29,
-          30,
-          31
-        ],
+        day: [ 1,2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
         dow: ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
         month: ['feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'],
         timezone: 'Asia/Calcutta'
@@ -151,33 +66,75 @@ exports.create = (req,res) =>
           data:err
         })
         }
+      ); 
+}
+
+/*
+This API launch Agent for processing api to scrap data
+*/
+
+exports.launchAgentEntry = (req,res) =>
+{
+    
+    sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
+    sdk.postAgentsLaunch({
+      id: req.body.id,
+    //   '5995136150519362',//get this id from request
+      argument: {
+        inboxFilter: 'all',
+        sessionCookie: req.body.sessionCookie,
+        //sessionCookie: 'AQEDAUMlUyQAOI1vAAABh-UbJmMAAAGILaZUx00AXOmk6TexIstJgJdA5zktbWkVpm9tkHbx5mQ9F0GomIEIMlS1XqljyD2qMZquQt7LhR934L_tHKaUm_8xeZW5HLwnVwy1Z2auClEvkrc7uREvmOEu',
+        before: '05-17-2023'
+      },
+      manualLaunch: true
+    })
+      .then(({ data }) => {
+         res.send({
+            status : "successfuly launched",
+            data:data
+          });
+        console.log(data)})
+      .catch(( err ) => 
+      {
+        res.send({
+          status : "error",
+          data:err
+        })
+        } 
       );
 
-
       
-    
+} 
+
+/*
+This API will delete Agent 
+*/
+exports.deleteAgentEntry =  (req,res) => {
+    // return res.send({"name":req.body});
+    sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
+    sdk.postAgentsDelete({id: req.body.id})//get this id from request
+      .then(({ data }) => {
+        res.send({
+            status : "successfuly deleted agent",
+            data:data
+          });
+         console.log(data)})
+      .catch(( err ) => 
+      {
+        res.send({
+          status : "error",
+          data:err
+        })
+        } 
+      );
+
+     
 }
 
-exports.apiOut = async (req,res) => {
-    let apifetchdata = "";
-sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
-await sdk.getAgentsFetchOutput({id: req.body.id})
-  .then(({ data }) => {
-    //console.log(data)
-    apifetchdata = data;
-})
-  .catch(err => console.error(err));
-
-  // return apifetchdata;
-
-  res.send({
-    status : "success",
-    data: apifetchdata
-  })
-}
-
-
-exports.apiFet = async (req,res) => {
+/*
+    This API will return all existing Agent , you can take any id and pass it to launch and fetch scrapped data in fetch api
+*/
+exports.apiFetchall = async (req,res) => {
 	let apiFetchall = "";
 	sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
 	await sdk.getAgentsFetchAll()
@@ -195,9 +152,10 @@ exports.apiFet = async (req,res) => {
 		data: apiFetchall
 	  })
 }
-
-
-exports.apiCall = async (req,res) => {
+/*
+  This API will return the Agent data only
+*/
+exports.apiFetchSingleAgentRecords = async (req,res) => {
 	let apiData = "";
 	sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
 	await sdk.getAgentsFetch({ id: req.body.id })
@@ -216,9 +174,24 @@ exports.apiCall = async (req,res) => {
 	})
 }
 
-// module.exports = apiCall;
+/*
+  This API will scrapped data, just pass agent id grabed from fectall api
+*/
+exports.apiFetchoutput = async (req,res) => {
+    let apifetchdata = "";
+sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
+await sdk.getAgentsFetchOutput({id: req.body.id})
+  .then(({ data }) => {
+    //console.log(data)
+    apifetchdata = data;
+})
+  .catch(err => console.error(err));
 
-// module.exports = apiFet;
-  
-  
-    
+  // return apifetchdata;
+
+  res.send({
+    status : "success",
+    data: apifetchdata
+  })
+}
+ 
