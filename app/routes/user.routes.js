@@ -1,9 +1,6 @@
 const express = require("express");
 const { authJwt } = require("../middlewares");
-const controllers = require("../controllers/cookie.controller");
-const myfirstmodule = require("../myfirstmodule");
-const fetchoutput = require("../fecthoutput");
-const fetchall = require("../fetchall");
+const controllers = require("../controllers/cookie.controller"); 
 const phantom  = require("../controllers/phantom.controller");
 
 
