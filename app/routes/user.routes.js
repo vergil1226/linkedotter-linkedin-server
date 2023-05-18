@@ -20,7 +20,7 @@ module.exports = function(app) {
 
   app.post('/fetch',phantom.apiFetchSingleAgentRecords);
 
-  app.post('/fetchoutput',phantom.apiFetchoutput);
+  app.post('/fetchoutput',phantom.apiFetchoutputData);
   
   app.post('/fetchall',phantom.apiFetchall);
 

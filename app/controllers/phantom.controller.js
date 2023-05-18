@@ -177,7 +177,7 @@ exports.apiFetchSingleAgentRecords = async (req,res) => {
 /*
   This API will scrapped data, just pass agent id grabed from fectall api
 */
-exports.apiFetchoutput = async (req,res) => {
+exports.apiFetchoutputData = async (req,res) => {
     let apifetchdata = "";
 sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
 await sdk.getAgentsFetchOutput({id: req.body.id})
