@@ -1,6 +1,6 @@
 const express = require("express");
 const { authJwt } = require("../middlewares");
-const controllers = require("../controllers/cookie.controller"); 
+const cookieControllers = require("../controllers/cookie.controller"); 
 const phantom  = require("../controllers/phantom.controller");
 
 
@@ -13,22 +13,36 @@ module.exports = function(app) {
     next();
   }); 
   
-  app.post("/api/set/cookie",authJwt.verifyToken,controllers.setcookie);
+  app.post("/api/set/cookie",authJwt.verifyToken,cookieControllers.setcookie);
 
 
   app.use(express.json());
 
-  app.post('/fetch',phantom.apiFetchSingleAgentRecords);
+  //Create Agent
+  app.post('/createPhantomAgent',phantom.createAgent);
 
-  app.post('/fetchoutput',phantom.apiFetchoutputData);
+  //Launch Agent with passing Cookie
+  app.post('/launchPhantomAgent',phantom.launchAgentEntry);
+
+  //API is used to get agent output which we have luacnhed using user cookie
+  app.post('/fetchPhantomAgentOutput',phantom.apiFetchoutputData);
   
-  app.post('/fetchall',phantom.apiFetchall);
+  //Fetch Agent Details
+  app.post('/fetchPhantomAgentDetails',phantom.apiFetchSingleAgentRecords);
 
-  app.post('/delete',phantom.deleteAgentEntry);
+  //Fetch All Agents Details
+  app.post('/fetchAllPhantomAgent',phantom.apiFetchall);
 
-  app.post('/launch',phantom.launchAgentEntry);
+  //Delete Agent
+  app.post('/deletePhantomAgent',phantom.deleteAgentEntry);
 
-  app.post('/create',phantom.createAgent);
+ 
+  app.post('/fetch/all/messages',phantom.fetchmessage);
+
+  app.get('/fetch/user/team',phantom.fetchteamuser);
+// app.post("/api/social_media",phantom.responseData);
+  // app.post("/api/agent/save",phantom.save_agent);
+
   
   
 };

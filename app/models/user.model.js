@@ -5,8 +5,13 @@ const User = mongoose.model(
   new mongoose.Schema({
     username: String,
     email: String,
-    password: String 
-    
+    password: String ,
+    team: String ,
+    user_type:String ,
+    date: {
+      type:Date,
+      default:{}
+    }
   })
 );
 

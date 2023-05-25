@@ -9,10 +9,19 @@ var bcrypt = require("bcryptjs");
  Signup API, we need to pass username, email and password in request body
  */
 exports.signup = (req, res) => {
+
+    var date=new Date();
+    var date=new Date(date.setDate(date.getDate()-1));
+    var today = date.toISOString().slice(0, 10);
+    
+    
     const user = new User({
         username: req.body.username,
         email: req.body.email,
-        password: bcrypt.hashSync(req.body.password, 8)
+        password: bcrypt.hashSync(req.body.password, 8),
+        team:req.body.team,
+        user_type:req.body.user_type,
+        date: today
     });
     user.save((err, user) => {
         if (err) {
@@ -22,8 +31,16 @@ exports.signup = (req, res) => {
             var token = jwt.sign({id: user.id}, config.secret, {
                 expiresIn: 86400 // 24 hours
             });
-
-            res.send({message: "User was registered successfully!", "token": token});
+            
+            const userData = new User({
+                username: req.body.username,
+                email: req.body.email,
+                team:req.body.team,
+                user_type:req.body.user_type
+                
+            });
+            
+            res.send({message: "User is registered successfully!", "token": token,user:userData});
         }
     });
 }
@@ -37,8 +54,8 @@ exports.signin = (req, res) => {
         username: req.body.username
     }).exec((err, user) => {
         if (err) {
-            res.status(500).send({message: err});
-            return;
+            return res.status(500).send({message: err});
+           
         }
 
         if (!user) {
@@ -66,7 +83,10 @@ exports.signin = (req, res) => {
             id: user._id,
             username: user.username,
             email: user.email,
-            accessToken: token
+            accessToken: token,
+            team:user.team,
+            user_type:user.user_type
+
         });
     });
 };
@@ -77,6 +97,7 @@ exports.signin = (req, res) => {
 exports.signout = (req, res) => {
 
     try {
+      
         const authHeader = req.headers["x-access-token"];
         jwt.sign(authHeader, "", {expiresIn: 1}, (logout, err) => {
             if (logout) {
