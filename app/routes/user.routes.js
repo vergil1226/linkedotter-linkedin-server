@@ -12,9 +12,8 @@ module.exports = function(app) {
     );
     next();
   }); 
-  
+  //set User Cookie Value
   app.post("/api/set/cookie",authJwt.verifyToken,cookieControllers.setcookie);
-
 
   app.use(express.json());
 
@@ -36,7 +35,7 @@ module.exports = function(app) {
   //Delete Agent
   app.post('/deletePhantomAgent',phantom.deleteAgentEntry);
 
- 
+ //Get All Scrapped Messages of Linkedin User
   app.post('/fetch/all/messages',phantom.fetchmessage);
 
   app.get('/fetch/user/team',phantom.fetchteamuser);
