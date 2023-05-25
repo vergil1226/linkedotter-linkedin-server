@@ -23,7 +23,8 @@ module.exports = function(app) {
   //Launch Agent with passing Cookie
   app.post('/launchPhantomAgent',phantom.launchAgentEntry);
 
-  //API is used to get agent output which we have luacnhed using user cookie
+  //API is hit phantom api to get data of laucnhed agent and then get Json URL from there once job is complete 
+  //and then parse Json and insert messages in database
   app.post('/fetchPhantomAgentOutput',phantom.apiFetchoutputData);
   
   //Fetch Agent Details
@@ -35,7 +36,7 @@ module.exports = function(app) {
   //Delete Agent
   app.post('/deletePhantomAgent',phantom.deleteAgentEntry);
 
- //Get All Scrapped Messages of Linkedin User
+ //Get All Scrapped Messages of Linkedin User by passing team name , it will return data from database 
   app.post('/fetch/all/messages',phantom.fetchmessage);
 
   app.get('/fetch/user/team',phantom.fetchteamuser);

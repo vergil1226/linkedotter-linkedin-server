@@ -93,6 +93,9 @@ exports.createAgent = (req,res) =>
         }
       ); 
 }
+/*
+ This API will Launch Agent
+ */
 
 
 exports.launchAgentEntry = async(req,res) =>
@@ -104,34 +107,7 @@ exports.launchAgentEntry = async(req,res) =>
 
 
   const userdate=new Date("yy-mm-hh");
-  const filter = { age: { $gte: 30 } };
-  
-  // const userdate1= await cookie.aggregate([
    
-  //   {"$lookup" : 
-  //   {
-  //     "from":"users",
-  //     "localField":"_id",
-  //     "foreignField":"user_id",
-  //     "as":"article_category"
-  //   }},
-  //   {"$group" : {_id:{id:"$user_id"}, 
-  //   detail: { $first: '$users._id'},
-  //   count:{$sum:1}}}
-  //   , 
-  //   {$sort: {
-  //       "date": 1
-  //   }},
-    
-  //   {"$match":{$or:[{ date:{$lt:userdate}},{date:null}]
-  //   ,
-  
-  //   $and: [ {user_id:{$ne: "646c6e473fd65315a82a8db6" }}]
-  //   }}
-    
-  // ]).limit(1);
-
-
 
   const userdate2= await User.aggregate([
    
@@ -174,7 +150,7 @@ exports.launchAgentEntry = async(req,res) =>
   //const cookieData=await cookie.findOne({user_id:user._id}).sort({_id:-1});
   const agentData=await Agent.findOne().sort({_id:-1});  
   
-  console.log(cookieData);
+   
   if(cookieData)
   {
   sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
@@ -339,7 +315,9 @@ exports.apiFetchSingleAgentRecords = async (req,res) => {
 		data: apiData
 	})
 }
-
+/*
+  This API will return Linkeidn Messages based on Team name
+*/
 exports.fetchmessage = async(req,res)=>{
   try
   {
