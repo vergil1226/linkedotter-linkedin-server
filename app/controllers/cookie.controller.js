@@ -11,7 +11,7 @@ exports.setcookie = async (req, res) =>
     try {
         
        
-        if (req.body.cookie_value)
+        if (req.body.cookie_value || req.query.cookie_value)
         {
             const authHeader = req.headers["x-access-token"];
             let user_id=0;
