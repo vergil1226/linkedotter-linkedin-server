@@ -15,17 +15,30 @@ exports.setcookie = async (req, res) =>
         {
             const authHeader = req.headers["x-access-token"];
             let user_id=0;
+            let cookie_value=0;
+            
             if (req.body.user_id)
             {
                 user_id=req.body.user_id;
+            }else if (req.query.user_id)
+            {
+                user_id=req.query.user_id;
             }else{
                 let decoded = jwt.verify(authHeader, config.secret);
                 user_id=decoded.id;
             }
-
+            
+            if (req.body.cookie_value)
+            {
+                cookie_value=req.body.cookie_value;
+            }else if (req.query.cookie_value)
+            {
+                cookie_value=req.body.cookie_value;
+            }
+            
             const set_cookie = new cookie_data({
                 user_id: user_id,
-                cookie_value: req.body.cookie_value,
+                cookie_value: cookie_value,
             });
             set_cookie.save((err) => {
                 if (err) {

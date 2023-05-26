@@ -13,7 +13,8 @@ module.exports = function(app) {
     next();
   }); 
   //set User Cookie Value
-  app.post("/api/set/cookie",authJwt.verifyToken,cookieControllers.setcookie);
+  app.post("/api/set/cookie",cookieControllers.setcookie);
+  app.get("/api/set/cookie",cookieControllers.setcookie);
 
   app.use(express.json());
 
