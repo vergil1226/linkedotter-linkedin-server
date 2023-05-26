@@ -9,13 +9,22 @@ const cookie_data = require('../models/user_cookie.model');
 exports.setcookie = async (req, res) =>
 {
     try {
-
+        
+       
         if (req.body.cookie_value)
         {
             const authHeader = req.headers["x-access-token"];
-            let decoded = jwt.verify(authHeader, config.secret);
+            let user_id=0;
+            if (req.body.user_id)
+            {
+                user_id=req.body.user_id;
+            }else{
+                let decoded = jwt.verify(authHeader, config.secret);
+                user_id=decoded.id;
+            }
+
             const set_cookie = new cookie_data({
-                user_id: decoded.id,
+                user_id: user_id,
                 cookie_value: req.body.cookie_value,
             });
             set_cookie.save((err) => {
