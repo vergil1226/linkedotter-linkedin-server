@@ -213,7 +213,11 @@ await sdk.getAgentsFetchOutput({id: agent_id})
   if(data.status==='finished')
   {
     var urlRegex = /(((https?:\/\/)|(www\.))[^\s]+)/g;
-    json_data_link=data.output.match(urlRegex)
+    json_data_link=data.output.match(urlRegex);
+    if(json_data_link == null)
+    {
+      return res.send({status : "success",message_status : "Invalid Cookie Value","data":[]});
+    }
   
     let responselink=json_data_link[1];
     phantom_link.create({ phantomLink:responselink});
