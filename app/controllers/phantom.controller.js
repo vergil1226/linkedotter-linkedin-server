@@ -100,57 +100,58 @@ exports.createAgent = (req,res) =>
 
 exports.launchAgentEntry = async(req,res) =>
 {
-
-  const d = new Date() // today, now
+  const d = new Date(); // today, now
   const today = d.toISOString().slice(0, 10);
   var newDate = new Date(today);
-
-
-  const userdate=new Date("yy-mm-hh");
-   
-
-  const userdate2= await User.aggregate([
-   
-    {"$lookup" : 
-    {
-      "from":"cookie_datas",
-      "localField":"_id",
-      "foreignField":"user_id",
-      "as":"article_category"
-    }},
-     
-    
-    {$sort: {
-        "date": 1
-    }},
-    
-    {"$match":{
-      
-      $and: [
-            
-      {username:{$ne:"admin" }},{"users._id":{$ne: "null" }}
-      ,
-      {
-        $or: [
-          {date:{$lt:newDate}}
-        ]
-    },  ]  
-    }}
-    
-  ]).limit(1);
-  
-
-
-  if(userdate2.length===0){
-    return res.send({status : "error","msg":"There is no user left to process for today"})
+  const userdate=new Date("yy-mm-hh");    
+  if(req.body.user_id)
+  {    
+    var user_id = req.body.user_id;   
   }
-  const cookieData=await cookie.findOne({user_id:userdate2[0]._id}).sort({_id:-1});
+  else
+  {
+    const userdate2= await User.aggregate([
+   
+      {"$lookup" : 
+      {
+        "from":"cookie_datas",
+        "localField":"_id",
+        "foreignField":"user_id",
+        "as":"article_category"
+      }},
+       
+      
+      {$sort: {
+          "date": 1
+      }},
+      
+      {"$match":{
+        
+        $and: [
+              
+        {username:{$ne:"admin" }},{"users._id":{$ne: "null" }}
+        ,
+        {
+          $or: [
+            {date:{$lt:newDate}}
+          ]
+      },  ]  
+      }}
+      
+    ]).limit(1);
+
+    if(userdate2.length===0){
+      return res.send({status : "error","msg":"There is no user left to process for today"})
+    }
+    var user_id = userdate2[0]._id;
+  }
+  
+  const cookieData=await cookie.findOne({user_id:user_id}).sort({_id:-1}).limit(1);
   
 //  const user =await User.findOne({$or:[{ date:{$lt:userdate}},{date:null}]}).sort({_id:-1});
   //const cookieData=await cookie.findOne({user_id:user._id}).sort({_id:-1});
-  const agentData=await Agent.findOne().sort({_id:-1});  
-  
-   
+  const agentData=await Agent.findOne().sort({_id:-1}); 
+ 
   if(cookieData)
   {
   sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
@@ -159,17 +160,14 @@ exports.launchAgentEntry = async(req,res) =>
         userContainer.create({user_id:cookieData.user_id,container_id:data.containerId,agent_id:agentData.agent_id})
         //User.findOneAndUpdate({_id:cookieData.user_id,},{date:new Date()})
  
-        const filter1 = { _id: userdate2[0]._id };
+        const filter1 = { _id: cookieData.user_id };
         const update1 = { date:today};
         User.findOneAndUpdate(filter1, update1, {new: true}).then(({ data }) => {
-          res.send({status : "successfuly launched",data:data});
+          res.send({status : "successfuly launched","data":data});
         }).catch(( err ) => {
             return res.send({status : "error",data:err})
           } 
         );
-
-
-         
         }).catch(( err ) => {
           return res.send({status : "error",data:err})
         } 
@@ -177,7 +175,7 @@ exports.launchAgentEntry = async(req,res) =>
   }
   else
   {
-    return res.send({status : "error","msg":"cookie value is not set"})
+    return res.send({status : "error","msg":"There is no user left to process for today"})
   }
 } 
 
@@ -190,12 +188,18 @@ exports.apiFetchoutputData = async (req,res) => {
 sdk.auth('MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q');
 
 let agent_id=null;
-if(!!req.body.id){
-  agent_id=req.body.id;
+if(req.body.user_id){
+  var agentData=await userContainer.findOne({"user_id":req.body.user_id}).sort({_id:-1}).limit(1);
 }else{
-  const agentData=await Agent.findOne().sort({_id:-1});
-  agent_id= agentData.agent_id;
+  var agentData=await userContainer.findOne().sort({_id:-1}).limit(1);
 }
+
+if(agentData == null)
+{
+  return res.send({"msg":"Agent Not Found"});
+}
+agent_id = agentData.agent_id;
+// return res.send({"userdata":agentData});
 
 /*
   Get Agent data for messages and insert into database table
@@ -240,7 +244,7 @@ await sdk.getAgentsFetchOutput({id: agent_id})
       {status : "success",message_status : "Agent Stll running, wait for it to finish and then hit api again",data:data}
     );
   }
-}).catch(err =>{ return res.send({err})});
+}).catch(err =>{ return res.send({"error":err.message,"success":false})});
 }
 
 
