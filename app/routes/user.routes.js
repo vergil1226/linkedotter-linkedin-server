@@ -43,7 +43,7 @@ module.exports = function(app) {
   app.get('/fetch/user/team',phantom.fetchteamuser);
 // app.post("/api/social_media",phantom.responseData);
   // app.post("/api/agent/save",phantom.save_agent);
-
   
+  app.post('/openai/decision',phantom.getOpenAiResponse);
   
 };

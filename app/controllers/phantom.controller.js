@@ -8,11 +8,49 @@ const phantomResponse=require("../models/response.model");
 const userContainer=require("../models/userContainer.model")
 var jwt = require("jsonwebtoken");
 const config = require("../config/auth.config");
+const { Configuration, OpenAIApi } = require("openai");
+const configuration = new Configuration({
+  apiKey: "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"
+})
+
+const openai = new OpenAIApi(configuration);
 
 /*
 This API will create Agent for message scrapper, we need to pass name and linkedin cookie
 */
 
+
+
+exports.getOpenAiResponse = async (req, res) => {
+  let { conversation } = req.body
+  try {
+    if (conversation) {
+      let apiResponse = "No";
+      let prompt = `I sell marketing and outreach sevices. Based on the following conversation -  is this person interested in having a conversion with me as prospective buyer or is interested in purchasing mu devices? Answer only is YES or NO. Do not explain, do not self reference. Only provide this one word answer. This is the conversation - ${JSON.stringify(conversation)}`;
+      const response = await openai.createCompletion({
+        model: "text-davinci-003",
+        prompt,
+        max_tokens: 3000,
+        top_p: 1,
+        frequency_penalty: 0.5,
+        presence_penalty: 0
+      });
+      if (response?.data?.choices?.length) {
+        if (response?.data?.choices[0].text.toLowerCase().includes('yes')) {
+          apiResponse = 'Yes';
+        }
+      }
+      res.status(200).json({ interested: apiResponse })
+    }
+    else {
+      res.status(400).send("Bad request")
+    }
+  }
+  catch (e) {
+    console.log("error",e)
+    res.status(500).send("Something went wrong!!")
+  }
+}
 
 exports.createAgent = (req,res) =>
 {
