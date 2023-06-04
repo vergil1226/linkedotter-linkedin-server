@@ -21,7 +21,7 @@ const db = require("./app/models");
 // mongodb+srv://petro:fn8xZSib3wGFjDx3@linkedotter.yqoyoi1.mongodb.net/?retryWrites=true/registrationFormHeruko
 db.mongoose
   .connect(
-    `mongodb+srv://kunalclepr:3rIgEIz5Kr1xRz46@cluster0.rizr71l.mongodb.net/?retryWrites=true/registrationFormHeruko`,
+    `mongodb+srv://petro:fn8xZSib3wGFjDx3@linkedotter.yqoyoi1.mongodb.net/?retryWrites=true/registrationFormHeruko`,
     {
       useNewUrlParser: true,
       useUnifiedTopology: true,

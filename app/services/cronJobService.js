@@ -83,9 +83,6 @@ cronJobService = async () => {
   const scheduleTime = await checkLastTime();
   const checkOpenAISchedule = new CronJob(scheduleTime, saveCheckTime);
   checkOpenAISchedule.start();
-
-  let ret = await connectOpenAI();
-  console.log(123123, ret);
 };
 
 module.exports = cronJobService;

@@ -11,6 +11,8 @@ const {
 var jwt = require("jsonwebtoken");
 const config = require("../config/auth.config");
 
+const api_key = "UUfDSfo6pWc0qXGEAKTOwAEjCqSrd4bnXqFT96iv4k8";
+
 /*
 This API will create Agent for message scrapper, we need to pass name and linkedin cookie
 */
@@ -25,8 +27,9 @@ exports.getOpenAiCheckedDate = async (req, res) => {
   }
 };
 
+//MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q SqCg0Sqh5sSp1OYETdyUnv58gwqAISNqi5cCkoL5Qm0
 exports.createAgent = (req, res) => {
-  sdk.auth("MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q");
+  sdk.auth(api_key);
   sdk
     .postAgentsSave({
       repeatedLaunchTimes: {
@@ -120,53 +123,53 @@ exports.createAgent = (req, res) => {
  */
 
 exports.launchAgentEntry = async (req, res) => {
-  const d = new Date(); // today, now
-  const today = d.toISOString().slice(0, 10);
-  var newDate = new Date(today);
-  const userdate = new Date("yy-mm-hh");
-  if (req.body.user_id) {
-    var user_id = req.body.user_id;
-  } else {
-    const userdate2 = await User.aggregate([
-      {
-        $lookup: {
-          from: "cookie_datas",
-          localField: "_id",
-          foreignField: "user_id",
-          as: "article_category",
-        },
-      },
+  // const d = new Date(); // today, now
+  // const today = d.toISOString().slice(0, 10);
+  // var newDate = new Date(today);
+  // const userdate = new Date("yy-mm-hh");
+  // if (req.body.user_id) {
+  //   var user_id = req.body.user_id;
+  // } else {
+  //   const userdate2 = await User.aggregate([
+  //     {
+  //       $lookup: {
+  //         from: "cookie_datas",
+  //         localField: "_id",
+  //         foreignField: "user_id",
+  //         as: "article_category",
+  //       },
+  //     },
 
-      {
-        $sort: {
-          date: 1,
-        },
-      },
+  //     {
+  //       $sort: {
+  //         date: 1,
+  //       },
+  //     },
 
-      {
-        $match: {
-          $and: [
-            { username: { $ne: "admin" } },
-            { "users._id": { $ne: "null" } },
-            {
-              $or: [{ date: { $lt: newDate } }],
-            },
-          ],
-        },
-      },
-    ]).limit(1);
+  //     {
+  //       $match: {
+  //         $and: [
+  //           { username: { $ne: "admin" } },
+  //           { "users._id": { $ne: "null" } },
+  //           {
+  //             $or: [{ date: { $lt: newDate } }],
+  //           },
+  //         ],
+  //       },
+  //     },
+  //   ]).limit(1);
 
-    if (userdate2.length === 0) {
-      return res.send({
-        status: "error",
-        msg: "There is no user left to process for today",
-      });
-    }
-    var user_id = userdate2[0]._id;
-  }
+  //   if (userdate2.length === 0) {
+  //     return res.send({
+  //       status: "error",
+  //       msg: "There is no user left to process for today",
+  //     });
+  //   }
+  //   var user_id = userdate2[0]._id;
+  // }
 
   const cookieData = await cookie
-    .findOne({ user_id: user_id })
+    .findOne()
     .sort({ _id: -1 })
     .limit(1);
 
@@ -175,14 +178,15 @@ exports.launchAgentEntry = async (req, res) => {
   const agentData = await Agent.findOne().sort({ _id: -1 });
 
   if (cookieData) {
-    sdk.auth("MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q");
+    sdk.auth(api_key);
     sdk
       .postAgentsLaunch({
         id: agentData.agent_id,
         argument: {
           inboxFilter: "all",
           sessionCookie: cookieData.cookie_value,
-          before: "05-23-2023",
+          // sessionCookie: "AQEDAQdzl50FdkjiAAABiH2cJKkAAAGIoaioqVYAkG9LkA1VAbsBUB1FryWrySbMUKTf2_inPvRVd_E2Nb2R3u4PCyRdB6YmQrs3rfKMPLyIZkp0kmwmgiJ",
+          before: "06-5-2023",
         },
         manualLaunch: true,
       })
@@ -221,7 +225,7 @@ exports.launchAgentEntry = async (req, res) => {
 exports.apiFetchoutputData = async (req, res) => {
   // let apifetchdata = "";
   var container_id;
-  sdk.auth("MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q");
+  sdk.auth(api_key);
 
   let agent_id = null;
   if (req.body.user_id) {
@@ -305,7 +309,7 @@ This API will delete Agent
 */
 exports.deleteAgentEntry = (req, res) => {
   // return res.send({"name":req.body});
-  sdk.auth("MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q");
+  sdk.auth(api_key);
   sdk
     .postAgentsDelete({ id: req.body.id }) //get this id from request
     .then(({ data }) => {
@@ -328,7 +332,7 @@ exports.deleteAgentEntry = (req, res) => {
 */
 exports.apiFetchall = async (req, res) => {
   let apiFetchall = "";
-  sdk.auth("MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q");
+  sdk.auth(api_key);
   await sdk
     .getAgentsFetchAll()
     .then(({ data }) => {
@@ -349,7 +353,7 @@ exports.apiFetchall = async (req, res) => {
 */
 exports.apiFetchSingleAgentRecords = async (req, res) => {
   let apiData = "";
-  sdk.auth("MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q");
+  sdk.auth(api_key);
   await sdk
     .getAgentsFetch({ id: req.body.id })
     .then(({ data }) => {
