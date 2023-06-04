@@ -184,8 +184,8 @@ exports.launchAgentEntry = async (req, res) => {
         id: agentData.agent_id,
         argument: {
           inboxFilter: "all",
-          sessionCookie: cookieData.cookie_value,
-          // sessionCookie: "AQEDAQdzl50FdkjiAAABiH2cJKkAAAGIoaioqVYAkG9LkA1VAbsBUB1FryWrySbMUKTf2_inPvRVd_E2Nb2R3u4PCyRdB6YmQrs3rfKMPLyIZkp0kmwmgiJ",
+          // sessionCookie: cookieData.cookie_value,
+          sessionCookie: "AQJ2PTEmc2FsZXNfY2lkPTUwNDQ1OTAwNyUzQSUzQTEyODIyMjAwN8uhT-ObKZpmfExet93qO3VHIrCu",
           before: "06-5-2023",
         },
         manualLaunch: true,
