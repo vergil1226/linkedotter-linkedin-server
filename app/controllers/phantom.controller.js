@@ -123,8 +123,8 @@ exports.createAgent = (req, res) => {
  */
 
 exports.launchAgentEntry = async (req, res) => {
-  // const d = new Date(); // today, now
-  // const today = d.toISOString().slice(0, 10);
+  const d = new Date(); // today, now
+  const today = d.toISOString().slice(0, 10);
   // var newDate = new Date(today);
   // const userdate = new Date("yy-mm-hh");
   // if (req.body.user_id) {
