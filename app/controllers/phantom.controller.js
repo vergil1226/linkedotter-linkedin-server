@@ -125,56 +125,61 @@ exports.createAgent = (req, res) => {
 exports.launchAgentEntry = async (req, res) => {
   const d = new Date(); // today, now
   const today = d.toISOString().slice(0, 10);
-  // var newDate = new Date(today);
-  // const userdate = new Date("yy-mm-hh");
-  // if (req.body.user_id) {
-  //   var user_id = req.body.user_id;
-  // } else {
-  //   const userdate2 = await User.aggregate([
-  //     {
-  //       $lookup: {
-  //         from: "cookie_datas",
-  //         localField: "_id",
-  //         foreignField: "user_id",
-  //         as: "article_category",
-  //       },
-  //     },
+  var newDate = new Date(today);
+  const userdate = new Date("yy-mm-hh");
+  if (req.body.user_id) {
+    var user_id = req.body.user_id;
+  } else {
+    const userdate2 = await User.aggregate([
+      {
+        $lookup: {
+          from: "cookie_datas",
+          localField: "_id",
+          foreignField: "user_id",
+          as: "article_category",
+        },
+      },
 
-  //     {
-  //       $sort: {
-  //         date: 1,
-  //       },
-  //     },
+      {
+        $sort: {
+          date: 1,
+        },
+      },
 
-  //     {
-  //       $match: {
-  //         $and: [
-  //           { username: { $ne: "admin" } },
-  //           { "users._id": { $ne: "null" } },
-  //           {
-  //             $or: [{ date: { $lt: newDate } }],
-  //           },
-  //         ],
-  //       },
-  //     },
-  //   ]).limit(1);
+      {
+        $match: {
+          $and: [
+            { username: { $ne: "admin" } },
+            { "users._id": { $ne: "null" } },
+            {
+              $or: [{ date: { $lt: newDate } }],
+            },
+          ],
+        },
+      },
+    ]).limit(1);
 
-  //   if (userdate2.length === 0) {
-  //     return res.send({
-  //       status: "error",
-  //       msg: "There is no user left to process for today",
-  //     });
-  //   }
-  //   var user_id = userdate2[0]._id;
-  // }
+    if (userdate2.length === 0) {
+      return res.send({
+        status: "error",
+        msg: "There is no user left to process for today",
+      });
+    }
+    var user_id = userdate2[0]._id;
+  }
 
+  // const cookieData = await cookie
+  //   .findOne()
+  //   .sort({ _id: -1 })
+  //   .limit(1);
+
+  const user = await User.findOne({
+    $or: [{ date: { $lt: today } }, { date: null }],
+  }).sort({ _id: -1 });
   const cookieData = await cookie
-    .findOne()
-    .sort({ _id: -1 })
-    .limit(1);
+    .findOne({ user_id: user._id })
+    .sort({ _id: -1 });
 
-  //  const user =await User.findOne({$or:[{ date:{$lt:userdate}},{date:null}]}).sort({_id:-1});
-  //const cookieData=await cookie.findOne({user_id:user._id}).sort({_id:-1});
   const agentData = await Agent.findOne().sort({ _id: -1 });
 
   if (cookieData) {
@@ -184,9 +189,9 @@ exports.launchAgentEntry = async (req, res) => {
         id: agentData.agent_id,
         argument: {
           inboxFilter: "all",
-          // sessionCookie: cookieData.cookie_value,
-          sessionCookie: "AQJ2PTEmc2FsZXNfY2lkPTUwNDQ1OTAwNyUzQSUzQTEyODIyMjAwN8uhT-ObKZpmfExet93qO3VHIrCu",
-          before: "06-5-2023",
+          sessionCookie: cookieData.cookie_value,
+          // sessionCookie: "AQEDAQdzl50FdkjiAAABiH2cJKkAAAGIoaioqVYAkG9LkA1VAbsBUB1FryWrySbMUKTf2_inPvRVd_E2Nb2R3u4PCyRdB6YmQrs3rfKMPLyIZkp0kmwmgiJ-lCHpVUeAE3-2FYcAIFJEZqlxh--AUgSm",
+          before: today,
         },
         manualLaunch: true,
       })
@@ -267,6 +272,7 @@ exports.apiFetchoutputData = async (req, res) => {
         let responselink = json_data_link[1];
         phantom_link.create({ phantomLink: responselink });
 
+        let count = 0;
         fetch(responselink, {
           method: "GET",
           headers: {
@@ -277,17 +283,28 @@ exports.apiFetchoutputData = async (req, res) => {
           .then((json) => {
             let container_id_user = getUserIdFromUserCotnainer(container_id);
             container_id_user.then(function (user_id) {
-              Object.keys(json).forEach(function (k) {
+              Object.keys(json).forEach(async (k) => {
                 json[k]["container_id"] = container_id;
                 json[k]["user_id"] = user_id;
+
+                var ret = await phantomResponse.findOne({
+                  user_id: user_id,
+                  lastMessageDate: json[k].lastMessageDate,
+                });
+                if (ret == null) {
+                  phantomResponse.create(json[k]);
+                  count++;
+                }
               });
-              phantomResponse.create(json);
             });
+          })
+          .catch((e) => {
+            console.log(e);
           });
 
         return res.send({
           status: "success",
-          message_status: "Messages have been Inserted",
+          message_status: `${count} messages have been Inserted`,
           data: data,
         });
       } else {
