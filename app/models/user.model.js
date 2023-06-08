@@ -8,6 +8,8 @@ const User = mongoose.model(
     password: String ,
     team: String ,
     user_type:String ,
+    quality_score: Number,
+    tta_value: Number,
     date: {
       type:Date,
       default:{}

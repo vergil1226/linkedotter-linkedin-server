@@ -7,6 +7,7 @@ const {
   userContainer,
   cookie,
   openAiCheck,
+  linkedin_user,
 } = require("../models");
 var jwt = require("jsonwebtoken");
 const config = require("../config/auth.config");
@@ -125,7 +126,7 @@ exports.createAgent = (req, res) => {
 exports.launchAgentEntry = async (req, res) => {
   const d = new Date(); // today, now
   const today = d.toISOString().slice(0, 10);
-  var newDate = new Date(today);
+  /*var newDate = new Date(today);
   const userdate = new Date("yy-mm-hh");
   if (req.body.user_id) {
     var user_id = req.body.user_id;
@@ -175,10 +176,8 @@ exports.launchAgentEntry = async (req, res) => {
 
   const user = await User.findOne({
     $or: [{ date: { $lt: today } }, { date: null }],
-  }).sort({ _id: -1 });
-  const cookieData = await cookie
-    .findOne({ user_id: user._id })
-    .sort({ _id: -1 });
+  }).sort({ _id: -1 });*/
+  const cookieData = await cookie.findOne({}).sort({ _id: -1 });
 
   const agentData = await Agent.findOne().sort({ _id: -1 });
 
@@ -190,7 +189,6 @@ exports.launchAgentEntry = async (req, res) => {
         argument: {
           inboxFilter: "all",
           sessionCookie: cookieData.cookie_value,
-          // sessionCookie: "AQEDAQdzl50FdkjiAAABiH2cJKkAAAGIoaioqVYAkG9LkA1VAbsBUB1FryWrySbMUKTf2_inPvRVd_E2Nb2R3u4PCyRdB6YmQrs3rfKMPLyIZkp0kmwmgiJ-lCHpVUeAE3-2FYcAIFJEZqlxh--AUgSm",
           before: today,
         },
         manualLaunch: true,
@@ -224,12 +222,198 @@ exports.launchAgentEntry = async (req, res) => {
   }
 };
 
-/*
-  This API will scrapped data, just pass agent id grabed from fectall api
-*/
-exports.apiFetchoutputData = async (req, res) => {
-  // let apifetchdata = "";
+const delay = (ms) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
+async function fetchProfile() {
+  let return_obj = {};
+  await sdk
+    .getAgentsFetchOutput({ id: "8602125783871801" })
+    .then(async ({ data }) => {
+      if (data.status === "running") {
+        await delay(3000);
+        return_obj = await fetchProfile();
+        return;
+      }
+
+      if (data.status === "finished") {
+        var urlRegex = /(((https?:\/\/)|(www\.))[^\s]+)/g;
+        json_data_link = data.output.match(urlRegex);
+        if (json_data_link == null) {
+          return_obj = {
+            status: "failed",
+            message: "Invalid Cookie Value",
+          };
+          return;
+        }
+      }
+
+      let responselink = json_data_link[json_data_link.length - 1];
+      if (responselink.indexOf(".json") < 0) {
+        return_obj = {
+          status: "success",
+          message: "no new profiles to add",
+        };
+        return;
+      }
+
+      await fetch(responselink, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then(async (json) => {
+          let count = 0;
+          for (let i = json.length - 1; i >= 0 && i >= json.length - 10; i--) {
+            if (json[i].error == null) {
+              let ret = await linkedin_user.findOne({
+                userLink: json[i].query,
+              });
+              if (ret == null) {
+                await linkedin_user.create({
+                  userLink: json[i].query,
+                  company: json[i].jobs[0]?.companyName,
+                  jobTitle: json[i].jobs[0]?.jobTitle,
+                });
+                count++;
+              }
+            }
+          }
+          return_obj = {
+            status: "success",
+            message: `${count} linkedin users' profile added`,
+          };
+        })
+        .catch((e) => {
+          console.log(e);
+          return_obj = {
+            status: "failed",
+            message: e.message,
+          };
+        });
+    })
+    .catch((err) => {
+      console.log(err);
+      return_obj = {
+        status: "failed",
+        message: e.message,
+      };
+    });
+
+  return return_obj;
+}
+
+async function getProfile(csv_link) {
+  const cookieData = await cookie.findOne({}).sort({ _id: -1 });
+  let return_obj = {};
+
+  await sdk
+    .postAgentsLaunch({
+      id: "8602125783871801",
+      argument: {
+        sessionCookie: cookieData.cookie_value,
+        spreadsheetUrl: csv_link,
+        numberOfAddsPerLaunch: 10,
+        columnName: "lastMessageFromUrl",
+      },
+      manualLaunch: true,
+    })
+    .then(({ data }) => {
+      console.log(data);
+      return_obj = {
+        status: "success",
+      };
+    })
+    .catch((err) => {
+      console.log(err);
+      return_obj = {
+        status: "failed",
+        message: err.message,
+      };
+    });
+
+  if (return_obj.status == "success") {
+    return await fetchProfile();
+  } else {
+    return return_obj;
+  }
+}
+
+async function fetchInbox(agent_id) {
+  let return_obj = {};
   var container_id;
+
+  await sdk
+    .getAgentsFetchOutput({ id: agent_id })
+    .then(async ({ data }) => {
+      apifetchdata = data;
+      container_id = data.containerId;
+
+      if (data.status === "running") {
+        await delay(2000);
+        return_obj = await fetchInbox(agent_id);
+        return;
+      }
+
+      if (data.status === "finished") {
+        var urlRegex = /(((https?:\/\/)|(www\.))[^\s]+)/g;
+        json_data_link = data.output.match(urlRegex);
+        if (json_data_link == null) {
+          return_obj.status = "failed";
+          return_obj.message = "Invalid Cookie Value";
+          return;
+        }
+
+        return_obj.csv_link = json_data_link[0];
+        let responselink = json_data_link[1];
+        phantom_link.create({ phantomLink: responselink });
+
+        let count = 0;
+        await fetch(responselink, {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then(async (json) => {
+            let user_id = await getUserIdFromUserCotnainer(container_id);
+            for (let i = 0; i < json.length; i++) {
+              var ret = await phantomResponse.findOne({
+                user_id: user_id,
+                lastMessageDate: json[i].lastMessageDate,
+              });
+              if (ret == null) {
+                json[i]["container_id"] = container_id;
+                json[i]["user_id"] = user_id;
+                json[i]["openAIChecked"] = false;
+                json[i]["isInterested"] = false;
+
+                await phantomResponse.create(json[i]);
+                count++;
+              }
+            }
+          })
+          .catch((e) => {
+            console.log(e);
+          });
+
+        return_obj.status = "success";
+        return_obj.message = `${count} messages have been Inserted`;
+      }
+    })
+    .catch((err) => {
+      return_obj.status = "failed";
+      return_obj.message = err.message;
+    });
+
+  return return_obj;
+}
+
+exports.apiFetchoutputData = async (req, res) => {
   sdk.auth(api_key);
 
   let agent_id = null;
@@ -246,79 +430,20 @@ exports.apiFetchoutputData = async (req, res) => {
     return res.send({ msg: "Agent Not Found" });
   }
   agent_id = agentData.agent_id;
-  // return res.send({"userdata":agentData});
+  let ret = await fetchInbox(agent_id);
 
-  /*
-  Get Agent data for messages and insert into database table
-*/
-
-  await sdk
-    .getAgentsFetchOutput({ id: agent_id })
-    .then(({ data }) => {
-      let link;
-      apifetchdata = data;
-      container_id = data.containerId;
-      if (data.status === "finished") {
-        var urlRegex = /(((https?:\/\/)|(www\.))[^\s]+)/g;
-        json_data_link = data.output.match(urlRegex);
-        if (json_data_link == null) {
-          return res.send({
-            status: "success",
-            message_status: "Invalid Cookie Value",
-            data: [],
-          });
-        }
-
-        let responselink = json_data_link[1];
-        phantom_link.create({ phantomLink: responselink });
-
-        let count = 0;
-        fetch(responselink, {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
-        })
-          .then((response) => response.json())
-          .then((json) => {
-            let container_id_user = getUserIdFromUserCotnainer(container_id);
-            container_id_user.then(function (user_id) {
-              Object.keys(json).forEach(async (k) => {
-                json[k]["container_id"] = container_id;
-                json[k]["user_id"] = user_id;
-
-                var ret = await phantomResponse.findOne({
-                  user_id: user_id,
-                  lastMessageDate: json[k].lastMessageDate,
-                });
-                if (ret == null) {
-                  phantomResponse.create(json[k]);
-                  count++;
-                }
-              });
-            });
-          })
-          .catch((e) => {
-            console.log(e);
-          });
-
-        return res.send({
-          status: "success",
-          message_status: `${count} messages have been Inserted`,
-          data: data,
-        });
-      } else {
-        return res.send({
-          status: "success",
-          message_status:
-            "Agent Stll running, wait for it to finish and then hit api again",
-          data: data,
-        });
-      }
-    })
-    .catch((err) => {
-      return res.send({ error: err.message, success: false });
+  if (ret.status === "success") {
+    let pret = await getProfile(ret.csv_link);
+    return res.send({
+      status: "success",
+      message: ret.message + "\n" + pret.message,
     });
+  } else {
+    return res.send({
+      status: ret.status,
+      message: ret.message,
+    });
+  }
 };
 
 /*
@@ -465,9 +590,29 @@ exports.fetchUserMessage = async (req, res) => {
         skip = (page - 1) * limit;
 
       const response = await phantomResponse
-        .find({ user_id: req.body.userId, isLastMessageFromMe: false })
+        .aggregate([
+          {
+            $match: {
+              user_id: req.body.userId,
+              isLastMessageFromMe: false,
+            },
+          },
+          {
+            $lookup: {
+              from: "linkedin_users",
+              localField: "lastMessageFromUrl",
+              foreignField: "userLink",
+              as: "profile",
+            },
+          },
+        ])
         .limit(limit)
         .skip(skip);
+
+      /*const response = await phantomResponse
+        .find({ user_id: req.body.userId, isLastMessageFromMe: false })
+        .limit(limit)
+        .skip(skip);*/
 
       var count = await phantomResponse.countDocuments({
         user_id: req.body.userId,

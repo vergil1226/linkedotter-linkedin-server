@@ -7,4 +7,7 @@ db.phantomResponse = require("./response.model");
 db.openAiCheck = require("./openai_check.model");
 db.userContainer = require("./userContainer.model");
 db.cookie = require("./user_cookie.model");
+db.linkedin_user = require("./linkedin_user.model");
+db.phantom_link = require("./phantomlink.model");
+db.all_message = require("./all_message.model");
 module.exports = db;
