@@ -42,6 +42,8 @@ module.exports = function (app) {
   //Get Scrapped Messages for specified user
   app.post("/fetch/all/user-messages", phantom.fetchUserMessage);
 
+  app.post("/fetch/all/message-thread", phantom.fetchMessageThread);
+
   app.get("/fetch/user/team", phantom.fetchteamuser);
   // app.post("/api/social_media",phantom.responseData);
   // app.post("/api/agent/save",phantom.save_agent);

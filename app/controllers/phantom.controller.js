@@ -8,6 +8,7 @@ const {
   cookie,
   openAiCheck,
   linkedin_user,
+  all_message,
 } = require("../models");
 var jwt = require("jsonwebtoken");
 const config = require("../config/auth.config");
@@ -126,59 +127,7 @@ exports.createAgent = (req, res) => {
 exports.launchAgentEntry = async (req, res) => {
   const d = new Date(); // today, now
   const today = d.toISOString().slice(0, 10);
-  /*var newDate = new Date(today);
-  const userdate = new Date("yy-mm-hh");
-  if (req.body.user_id) {
-    var user_id = req.body.user_id;
-  } else {
-    const userdate2 = await User.aggregate([
-      {
-        $lookup: {
-          from: "cookie_datas",
-          localField: "_id",
-          foreignField: "user_id",
-          as: "article_category",
-        },
-      },
-
-      {
-        $sort: {
-          date: 1,
-        },
-      },
-
-      {
-        $match: {
-          $and: [
-            { username: { $ne: "admin" } },
-            { "users._id": { $ne: "null" } },
-            {
-              $or: [{ date: { $lt: newDate } }],
-            },
-          ],
-        },
-      },
-    ]).limit(1);
-
-    if (userdate2.length === 0) {
-      return res.send({
-        status: "error",
-        msg: "There is no user left to process for today",
-      });
-    }
-    var user_id = userdate2[0]._id;
-  }
-
-  // const cookieData = await cookie
-  //   .findOne()
-  //   .sort({ _id: -1 })
-  //   .limit(1);
-
-  const user = await User.findOne({
-    $or: [{ date: { $lt: today } }, { date: null }],
-  }).sort({ _id: -1 });*/
   const cookieData = await cookie.findOne({}).sort({ _id: -1 });
-
   const agentData = await Agent.findOne().sort({ _id: -1 });
 
   if (cookieData) {
@@ -190,6 +139,7 @@ exports.launchAgentEntry = async (req, res) => {
           inboxFilter: "all",
           sessionCookie: cookieData.cookie_value,
           before: today,
+          numberOfThreadsToScrape: 500,
         },
         manualLaunch: true,
       })
@@ -199,10 +149,9 @@ exports.launchAgentEntry = async (req, res) => {
           container_id: data.containerId,
           agent_id: agentData.agent_id,
         });
-        //User.findOneAndUpdate({_id:cookieData.user_id,},{date:new Date()})
 
         const filter1 = { _id: cookieData.user_id };
-        const update1 = { date: today };
+        const update1 = { date: d };
         User.findOneAndUpdate(filter1, update1, { new: true })
           .then(({ data }) => {
             res.send({ status: "successfuly launched", data: data });
@@ -359,7 +308,7 @@ async function fetchInbox(agent_id) {
       }
 
       if (data.status === "finished") {
-        var urlRegex = /(((https?:\/\/)|(www\.))[^\s]+)/g;
+        var urlRegex = /(((https?:\/\/))[^\s]+)/g;
         json_data_link = data.output.match(urlRegex);
         if (json_data_link == null) {
           return_obj.status = "failed";
@@ -589,30 +538,33 @@ exports.fetchUserMessage = async (req, res) => {
         page = req.body.page > 0 ? req.body.page : 1,
         skip = (page - 1) * limit;
 
-      const response = await phantomResponse
-        .aggregate([
-          {
-            $match: {
-              user_id: req.body.userId,
-              isLastMessageFromMe: false,
-            },
+      const response = await phantomResponse.aggregate([
+        {
+          $match: {
+            user_id: req.body.userId,
+            isLastMessageFromMe: false,
           },
-          {
-            $lookup: {
-              from: "linkedin_users",
-              localField: "lastMessageFromUrl",
-              foreignField: "userLink",
-              as: "profile",
-            },
+        },
+        {
+          $lookup: {
+            from: "linkedin_users",
+            localField: "lastMessageFromUrl",
+            foreignField: "userLink",
+            as: "profile",
           },
-        ])
-        .limit(limit)
-        .skip(skip);
-
-      /*const response = await phantomResponse
-        .find({ user_id: req.body.userId, isLastMessageFromMe: false })
-        .limit(limit)
-        .skip(skip);*/
+        },
+        {
+          $sort: {
+            lastMessageDate: -1,
+          },
+        },
+        {
+          $skip: skip,
+        },
+        {
+          $limit: limit,
+        },
+      ]);
 
       var count = await phantomResponse.countDocuments({
         user_id: req.body.userId,
@@ -624,6 +576,18 @@ exports.fetchUserMessage = async (req, res) => {
     return res.send({ success: "false", msg: "not found" });
   } catch (error) {
     return res.send({ success: "false", msg: error.message, data: [] });
+  }
+};
+
+exports.fetchMessageThread = async (req, res) => {
+  try {
+    const ret = await all_message
+      .find({ conversationUrl: req.body.threadUrl })
+      .sort({ date: 1 });
+
+    return res.send({ success: "success", data: ret });
+  } catch (error) {
+    return res.send({ success: "false", msg: error.message });
   }
 };
 

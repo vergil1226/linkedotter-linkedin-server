@@ -10,4 +10,5 @@ db.cookie = require("./user_cookie.model");
 db.linkedin_user = require("./linkedin_user.model");
 db.phantom_link = require("./phantomlink.model");
 db.all_message = require("./all_message.model");
+db.message_thread = require("./message_thread.model");
 module.exports = db;

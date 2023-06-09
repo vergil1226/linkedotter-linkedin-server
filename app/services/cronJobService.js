@@ -6,10 +6,12 @@ const {
   phantom_link,
   cookie,
   all_message,
+  message_thread,
 } = require("./../models");
 const moment = require("moment");
 
 const api_key = "UUfDSfo6pWc0qXGEAKTOwAEjCqSrd4bnXqFT96iv4k8";
+// const api_key = "Q30e1EZKVoULIZZpyRUsuLnppo38GRaJoMAiOkFwOk0";
 
 const { Configuration, OpenAIApi } = require("openai");
 const { user } = require("./../models");
@@ -46,7 +48,7 @@ const delay = (ms) => {
 const fetchLastMessages = async () => {
   let return_obj = {};
   await sdk
-    .getAgentsFetchOutput({ id: "401312578853651" })
+    .getAgentsFetchOutput({ id: "4841339730641923" })
     .then(async ({ data }) => {
       if (data.status === "running") {
         await delay(3000);
@@ -129,11 +131,11 @@ const getLastMessages = async () => {
   sdk.auth(api_key);
   await sdk
     .postAgentsLaunch({
-      id: "401312578853651",
+      id: "4841339730641923",
       argument: {
         sessionCookie: cookieData.cookie_value,
         spreadsheetUrl: phantomLink,
-        columnName: "lastMessageFromUrl",
+        columnName: "threadUrl",
         profilesPerLaunch: 100,
         messagesPerExtract: 5,
       },
@@ -163,6 +165,98 @@ const getLastMessages = async () => {
   }*/
 };
 
+const fetchMessageThread = async (threadUrl) => {
+  await sdk
+    .getAgentsFetchOutput({ id: "4841339730641923" })
+    .then(async ({ data }) => {
+      if (data.status === "running") {
+        await delay(3000);
+        return_obj = await fetchMessageThread(threadUrl);
+        return;
+      }
+
+      if (data.status === "finished") {
+        var urlRegex = /(((https?:\/\/))[^\s]+)/g;
+        json_data_link = data.output.match(urlRegex);
+        if (json_data_link == null) {
+          return_obj = {
+            status: "failed",
+          };
+          return;
+        }
+      }
+
+      let responselink = json_data_link[json_data_link.length - 1];
+      if (responselink.indexOf(".json") < 0) {
+        return_obj = {
+          status: "failed",
+        };
+        return;
+      }
+
+      await fetch(responselink, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then(async (json) => {
+          for (let i = 0; i < json.length; i++) {
+            if (json[i].error == null) {
+              await all_message.create(json[i].messages);
+            }
+          }
+          return_obj = {
+            status: "success",
+            messages: json[0].messages,
+          };
+        })
+        .catch((e) => {
+          console.log(e);
+          return_obj = {
+            status: "failed",
+          };
+        });
+    })
+    .catch((err) => {
+      console.log(err);
+      return_obj = {
+        status: "failed",
+      };
+    });
+
+  return return_obj;
+};
+
+const getMessageThread = async (threadUrl) => {
+  const cookieData = await cookie.findOne({}).sort({ _id: -1 });
+  sdk.auth(api_key);
+  await sdk
+    .postAgentsLaunch({
+      id: "4841339730641923",
+      argument: {
+        sessionCookie: cookieData.cookie_value,
+        spreadsheetUrl: threadUrl,
+      },
+      manualLaunch: true,
+    })
+    .then(({ data }) => {
+      console.log(data);
+      return_obj = {
+        status: "success",
+      };
+    })
+    .catch((err) => {
+      console.log(err);
+      return_obj = {
+        status: "failed",
+        message: err.message,
+      };
+    });
+  return await fetchMessageThread(threadUrl);
+};
+
 const connectOpenAI = async () => {
   try {
     let ret = await phantomResponse.find({
@@ -173,36 +267,48 @@ const connectOpenAI = async () => {
     for (let i = 0; i < ret.length; i++) {
       let prompt =
         "I sell marketing and outreach sevices. Based on the following conversation -  is this person interested in having a conversion with me as prospective buyer or is interested in purchasing mu devices? Answer only is YES or NO. Do not explain, do not self reference. Only provide this one word answer. This is the conversation.\n";
-      let messageThread = await all_message.find({
-        url: ret[i].lastMessageFromUrl,
-      });
-      for (let j = 0; j < messageThread.length; j++) {
-        let message = messageThread[j].message.replace(/\n/g, " ");
-        if (messageThread[j].connectionDegree === "You") {
-          prompt += `me: ${message}\n`;
+
+      let messageThread = await getMessageThread(ret[i].threadUrl);
+      let messages = null;
+      if (messageThread.status === "failed") {
+        messages = await all_message.find({
+          conversationUrl: ret[i].threadUrl,
+        });
+      } else {
+        messages = messageThread.messages;
+      }
+      if (messages == null) continue;
+      for (let j = 0; j < messages.length; j++) {
+        let message = messages[j].message.replace(/\n/g, " ");
+        if (messages[j].firstName === ret[i].firstnameFrom) {
+          prompt += `${messages[j].firstName}: ${message}\n`;
         } else {
-          prompt += `${messageThread[j].firstName}: ${message}\n`;
+          prompt += `me: ${message}\n`;
         }
       }
 
-      let apiResponse = false;
-      const response = await openai.createCompletion({
-        model: "text-davinci-003",
-        prompt,
-        max_tokens: 3000,
-        top_p: 1,
-        frequency_penalty: 0.5,
-        presence_penalty: 0,
-      });
-      if (response?.data?.choices?.length) {
-        if (response?.data?.choices[0].text.toLowerCase().includes("yes")) {
-          apiResponse = true;
+      try {
+        let apiResponse = false;
+        const response = await openai.createCompletion({
+          model: "text-davinci-003",
+          prompt,
+          max_tokens: 3000,
+          top_p: 1,
+          frequency_penalty: 0.5,
+          presence_penalty: 0,
+        });
+        if (response?.data?.choices?.length) {
+          if (response?.data?.choices[0].text.toLowerCase().includes("yes")) {
+            apiResponse = true;
+          }
         }
+        await phantomResponse.updateOne(
+          { _id: ret[i]._id },
+          { $set: { isInterested: apiResponse, openAIChecked: true } }
+        );
+      } catch (err) {
+        console.log(err);
       }
-      await phantomResponse.updateOne(
-        { _id: ret[i]._id },
-        { $set: { isInterested: apiResponse, openAIChecked: true } }
-      );
     }
 
     return true;
@@ -220,9 +326,13 @@ const checkQualityScore = async () => {
 
     let score = 0;
     for (let i = 0; i < ret.length; i++) {
+      if (ret[i].qualityScore != -1) {
+        score += ret[i].qualityScore;
+        continue;
+      }
       let prompt = `You are an expert SDR, BDR and sales coach. Look at this conversation, and provide the score from 0-100 for how good the answer of ${ret[i].firstnameFrom} was. Do not self reference. Your answer should only contain the score and nothing else. This is the conversation.\n`;
       let messageThread = await all_message.find({
-        url: ret[i].lastMessageFromUrl,
+        url: ret[i].threadUrl,
       });
       for (let j = 0; j < messageThread.length; j++) {
         let message = messageThread[j].message.replace(/\n/g, " ");
@@ -242,7 +352,12 @@ const checkQualityScore = async () => {
         presence_penalty: 0,
       });
       if (response?.data?.choices?.length) {
-        score += parseInt(response?.data?.choices[0].text);
+        let val = parseInt(response?.data?.choices[0].text);
+        score += val;
+        await phantomResponse.updateOne(
+          { _id: ret[i]._id },
+          { qualityScore: val }
+        );
       }
     }
     await user.updateOne(
@@ -265,7 +380,7 @@ const checkTTA = async () => {
         date: {
           $gt: ret[i].lastMessageDate,
         },
-        url: ret[i].lastMessageFromUrl,
+        conversationUrl: ret[i].threadUrl,
       });
       if (message != null) {
         tta += (moment(message.date) - moment(ret[i].lastMessageDate)).hour();
@@ -302,8 +417,21 @@ cronJobService = async () => {
   const checkOpenAISchedule = new CronJob(scheduleTime, saveCheckTime);
   checkOpenAISchedule.start();
 
-  //await checkTTA();
-  //await checkQualityScore();
+  // await getLastMessages();
+  // await checkTTA(); 
+  // await checkQualityScore();
+  // await connectOpenAI();
+  // await phantomResponse.updateMany({}, {openAIChecked: false, isInterested: false});
+  // await phantomResponse.updateMany({}, { qualityScore: -1, ttaValue: -1 });
+
+  // let message = await all_message.findOne({
+  //   date: {
+  //     $gt: "2023-06-08T19:42:22.099Z",
+  //   },
+  //   conversationUrl:
+  //     "https://www.linkedin.com/messaging/thread/2-NzkzODMwOGItM2I1Yy00MTRmLWExMzAtY2Q3NWQ2MDY1ZTBkXzAxMA==",
+  // });
+  // console.log(message);
 };
 
 module.exports = cronJobService;

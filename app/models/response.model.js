@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const phantomResponse = new mongoose.Schema(
   {
+    threadUrl: { type: String },
     message: { type: String },
     lastMessageFromUrl: { type: String },
     firstnameFrom: { type: String },
@@ -13,6 +14,8 @@ const phantomResponse = new mongoose.Schema(
     user_id: { type: String },
     isInterested: { type: Boolean },
     openAIChecked: { type: Boolean },
+    qualityScore : { type: Number },
+    ttaValue : { type: Number },
   },
   { timestamps: true }
 );
