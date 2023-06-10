@@ -56,5 +56,5 @@ module.exports = function (app) {
   app.get("/get-positive-reply", phantom.getPositiveReply);
 
   // Get TTA value and Quality Score for a user
-  app.get("/get-tta-qualitysocre", phantom.getTTAandQualityScore);
+  app.get("/get-tta-qualityscore", phantom.getTTAandQualityScore);
 };
