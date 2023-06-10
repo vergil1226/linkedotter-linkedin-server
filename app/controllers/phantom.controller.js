@@ -15,10 +15,7 @@ const config = require("../config/auth.config");
 
 const api_key = "UUfDSfo6pWc0qXGEAKTOwAEjCqSrd4bnXqFT96iv4k8";
 
-/*
-This API will create Agent for message scrapper, we need to pass name and linkedin cookie
-*/
-
+// return last openai checked date
 exports.getOpenAiCheckedDate = async (req, res) => {
   try {
     let ret = await openAiCheck.findOne();
@@ -29,7 +26,9 @@ exports.getOpenAiCheckedDate = async (req, res) => {
   }
 };
 
-//MIdlWFYwQRCINIBNaaWZ6QRw4MEvN5wJYDymKMqeC4Q SqCg0Sqh5sSp1OYETdyUnv58gwqAISNqi5cCkoL5Qm0
+/*
+This API will create Agent for message scrapper, we need to pass name and linkedin cookie
+*/
 exports.createAgent = (req, res) => {
   sdk.auth(api_key);
   sdk
@@ -120,10 +119,10 @@ exports.createAgent = (req, res) => {
       });
     });
 };
+
 /*
  This API will Launch Agent
  */
-
 exports.launchAgentEntry = async (req, res) => {
   const d = new Date(); // today, now
   const today = d.toISOString().slice(0, 10);
@@ -139,7 +138,7 @@ exports.launchAgentEntry = async (req, res) => {
           inboxFilter: "all",
           sessionCookie: cookieData.cookie_value,
           before: today,
-          numberOfThreadsToScrape: 500,
+          numberOfThreadsToScrape: 1,
         },
         manualLaunch: true,
       })
@@ -216,7 +215,7 @@ async function fetchProfile() {
         .then((response) => response.json())
         .then(async (json) => {
           let count = 0;
-          for (let i = json.length - 1; i >= 0 && i >= json.length - 10; i--) {
+          for (let i = json.length - 1; i >= 0 && i >= json.length - 100; i--) {
             if (json[i].error == null) {
               let ret = await linkedin_user.findOne({
                 userLink: json[i].query,
@@ -265,7 +264,7 @@ async function getProfile(csv_link) {
       argument: {
         sessionCookie: cookieData.cookie_value,
         spreadsheetUrl: csv_link,
-        numberOfAddsPerLaunch: 10,
+        numberOfAddsPerLaunch: 100,
         columnName: "lastMessageFromUrl",
       },
       manualLaunch: true,
@@ -641,4 +640,56 @@ exports.userData = async (req, res) => {
     agent: agentData,
     // agent:agentData
   });
+};
+
+/*
+Ths API returns positive replies for a specified user
+*/
+exports.getPositiveReply = async (req, res) => {
+  try {
+    if (req.body.email && req.body.startDate && req.body.endDate) {
+      const user = await User.findOne({
+        email: req.body.email,
+      });
+
+      if (user) {
+        const response = await phantomResponse.find({
+          user_id: user._id,
+          isInterested: true,
+          lastMessageDate: {
+            $gte: new Date(req.body.startDate),
+            $lte: new Date(req.body.endDate),
+          },
+        });
+
+        return res.send(response);
+      }
+    }
+
+    return res.send({ success: "false", msg: "not found" });
+  } catch (error) {
+    return res.send({ success: "false", msg: error.message, data: [] });
+  }
+};
+
+/*
+Ths API returns TTA value and Quality Score for a specified user
+*/
+exports.getTTAandQualityScore = async (req, res) => {
+  try {
+    if (req.body.email) {
+      const response = await User.findOne({
+        email: req.body.email,
+      });
+
+      return res.send({
+        tta: response.tta_value,
+        quality_score: response.quality_score,
+      });
+    }
+
+    return res.send({ success: "false", msg: "not found" });
+  } catch (error) {
+    return res.send({ success: "false", msg: error.message, data: [] });
+  }
 };

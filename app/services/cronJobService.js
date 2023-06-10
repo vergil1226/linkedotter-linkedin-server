@@ -6,7 +6,6 @@ const {
   phantom_link,
   cookie,
   all_message,
-  message_thread,
 } = require("./../models");
 const moment = require("moment");
 
@@ -15,6 +14,15 @@ const api_key = "UUfDSfo6pWc0qXGEAKTOwAEjCqSrd4bnXqFT96iv4k8";
 
 const { Configuration, OpenAIApi } = require("openai");
 const { user } = require("./../models");
+const {
+  launchAgentEntry,
+  fetchInbox,
+  launchProfileAgent,
+  fetchProfile,
+  launchMessageThread,
+  fetchMessageThread,
+} = require("./agentService");
+const linkedn_user = require("../models/linkedin_user.model");
 const configuration = new Configuration({
   apiKey: "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",
 });
@@ -41,222 +49,6 @@ const checkLastTime = async () => {
   }
 };
 
-const delay = (ms) => {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-};
-
-const fetchLastMessages = async () => {
-  let return_obj = {};
-  await sdk
-    .getAgentsFetchOutput({ id: "4841339730641923" })
-    .then(async ({ data }) => {
-      if (data.status === "running") {
-        await delay(3000);
-        return_obj = await fetchLastMessages();
-        return;
-      }
-
-      if (data.status === "finished") {
-        var urlRegex = /(((https?:\/\/))[^\s]+)/g;
-        json_data_link = data.output.match(urlRegex);
-        if (json_data_link == null) {
-          return_obj = {
-            status: "failed",
-            message: "Invalid Cookie Value",
-          };
-          return;
-        }
-      }
-
-      let responselink = json_data_link[json_data_link.length - 1];
-      if (responselink.indexOf(".json") < 0) {
-        return_obj = {
-          status: "success",
-          message: "no new messages to add",
-        };
-        return;
-      }
-
-      await fetch(responselink, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-      })
-        .then((response) => response.json())
-        .then(async (json) => {
-          let count = 0;
-
-          for (let i = 0; i < json.length; i++) {
-            if (json[i].error == null) {
-              for (let j = 0; j < json[i].messages.length; j++) {
-                json[i].messages[j].user_id = "647e65ced03c930014645ffe";
-              }
-              await all_message.create(json[i].messages);
-              count++;
-            }
-          }
-
-          return_obj = {
-            status: "success",
-            message: `${count} message threads added`,
-          };
-        })
-        .catch((e) => {
-          console.log(e);
-          return_obj = {
-            status: "failed",
-            message: e.message,
-          };
-        });
-    })
-    .catch((err) => {
-      console.log(err);
-      return_obj = {
-        status: "failed",
-        message: err.message,
-      };
-    });
-
-  return return_obj;
-};
-
-const getLastMessages = async () => {
-  const link = await phantom_link.findOne({}).sort({ _id: -1 });
-  const cookieData = await cookie.findOne({}).sort({ _id: -1 });
-  let return_obj = {};
-  // let phantomLink = link.phantomLink;
-  let phantomLink = link.phantomLink.replace(".json", ".csv");
-
-  sdk.auth(api_key);
-  await sdk
-    .postAgentsLaunch({
-      id: "4841339730641923",
-      argument: {
-        sessionCookie: cookieData.cookie_value,
-        spreadsheetUrl: phantomLink,
-        columnName: "threadUrl",
-        profilesPerLaunch: 100,
-        messagesPerExtract: 5,
-      },
-      manualLaunch: true,
-    })
-    .then(({ data }) => {
-      console.log(data);
-      return_obj = {
-        status: "success",
-      };
-    })
-    .catch((err) => {
-      console.log(err);
-      return_obj = {
-        status: "failed",
-        message: err.message,
-      };
-    });
-
-  let ret = await fetchLastMessages();
-  console.log(ret);
-  /*
-  if (return_obj.status == "success") {
-    return await fetchLastMessages();
-  } else {
-    return return_obj;
-  }*/
-};
-
-const fetchMessageThread = async (threadUrl) => {
-  await sdk
-    .getAgentsFetchOutput({ id: "4841339730641923" })
-    .then(async ({ data }) => {
-      if (data.status === "running") {
-        await delay(3000);
-        return_obj = await fetchMessageThread(threadUrl);
-        return;
-      }
-
-      if (data.status === "finished") {
-        var urlRegex = /(((https?:\/\/))[^\s]+)/g;
-        json_data_link = data.output.match(urlRegex);
-        if (json_data_link == null) {
-          return_obj = {
-            status: "failed",
-          };
-          return;
-        }
-      }
-
-      let responselink = json_data_link[json_data_link.length - 1];
-      if (responselink.indexOf(".json") < 0) {
-        return_obj = {
-          status: "failed",
-        };
-        return;
-      }
-
-      await fetch(responselink, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-      })
-        .then((response) => response.json())
-        .then(async (json) => {
-          for (let i = 0; i < json.length; i++) {
-            if (json[i].error == null) {
-              await all_message.create(json[i].messages);
-            }
-          }
-          return_obj = {
-            status: "success",
-            messages: json[0].messages,
-          };
-        })
-        .catch((e) => {
-          console.log(e);
-          return_obj = {
-            status: "failed",
-          };
-        });
-    })
-    .catch((err) => {
-      console.log(err);
-      return_obj = {
-        status: "failed",
-      };
-    });
-
-  return return_obj;
-};
-
-const getMessageThread = async (threadUrl) => {
-  const cookieData = await cookie.findOne({}).sort({ _id: -1 });
-  sdk.auth(api_key);
-  await sdk
-    .postAgentsLaunch({
-      id: "4841339730641923",
-      argument: {
-        sessionCookie: cookieData.cookie_value,
-        spreadsheetUrl: threadUrl,
-      },
-      manualLaunch: true,
-    })
-    .then(({ data }) => {
-      console.log(data);
-      return_obj = {
-        status: "success",
-      };
-    })
-    .catch((err) => {
-      console.log(err);
-      return_obj = {
-        status: "failed",
-        message: err.message,
-      };
-    });
-  return await fetchMessageThread(threadUrl);
-};
-
 const connectOpenAI = async () => {
   try {
     let ret = await phantomResponse.find({
@@ -266,17 +58,12 @@ const connectOpenAI = async () => {
 
     for (let i = 0; i < ret.length; i++) {
       let prompt =
-        "I sell marketing and outreach sevices. Based on the following conversation -  is this person interested in having a conversion with me as prospective buyer or is interested in purchasing mu devices? Answer only is YES or NO. Do not explain, do not self reference. Only provide this one word answer. This is the conversation.\n";
+        "I sell marketing and outreach sevices. Based on the following conversation -  is this person interested in having a conversion with me as prospective buyer, is interested in purchasing my services, or interested in speaking to me further (even if they dont want a sales pitch)? Answer only is YES or NO. Do not explain, do not self reference. Only provide this one word answer. This is the conversation.\n";
 
-      let messageThread = await getMessageThread(ret[i].threadUrl);
-      let messages = null;
-      if (messageThread.status === "failed") {
-        messages = await all_message.find({
-          conversationUrl: ret[i].threadUrl,
-        });
-      } else {
-        messages = messageThread.messages;
-      }
+      let messages = await all_message.find({
+        conversationUrl: ret[i].threadUrl,
+      });
+
       if (messages == null) continue;
       for (let j = 0; j < messages.length; j++) {
         let message = messages[j].message.replace(/\n/g, " ");
@@ -374,7 +161,8 @@ const checkTTA = async () => {
     let ret = await phantomResponse.find({
       isInterested: true,
     });
-    let tta = 0;
+    let tta = 0,
+      count = 0;
     for (let i = 0; i < ret.length; i++) {
       let message = await all_message.findOne({
         date: {
@@ -384,11 +172,14 @@ const checkTTA = async () => {
       });
       if (message != null) {
         tta += (moment(message.date) - moment(ret[i].lastMessageDate)).hour();
+        count++;
       }
     }
+
+    if (count == 0) return;
     await user.updateOne(
       { _id: "647e65ced03c930014645ffe" },
-      { $set: { tta_value: tta / ret.length } }
+      { $set: { tta_value: tta / count } }
     );
   } catch (err) {
     console.log(err.message);
@@ -398,11 +189,14 @@ const checkTTA = async () => {
 // connect to OpenAI API and save checked time
 const saveCheckTime = async () => {
   try {
-    let ret = await getLastMessages();
-    if (!ret) return;
-
-    ret = await connectOpenAI();
-    if (!ret) return;
+    const users = await user.find({
+      username: {
+        $ne: "admin",
+      },
+    });
+    for (let i = 0; i < users.length; i++) {
+      await this.runProcess(users._id);
+    }
 
     const currentTime = moment().format("YYYY-MM-DD HH:mm:ss");
     await openAiCheck.updateOne({}, { $set: { checkDate: currentTime } });
@@ -412,26 +206,51 @@ const saveCheckTime = async () => {
   }
 };
 
+exports.runProcess = async (user_id) => {
+  let ret = await launchAgentEntry(user_id);
+  if (ret.status == "failed") return;
+  ret = await fetchInbox(user_id, "3954653220496213");
+
+  let messages = ret.messages;
+  for (let i = 0; i < messages.length; i++) {
+    let pro = await linkedn_user.findOne({
+      userLink: messages[i].lastMessageFromUrl,
+    });
+    if (pro == null) {
+      let result = await launchProfileAgent(messages[i].lastMessageFromUrl);
+      if ((result.status = "success")) {
+        await fetchProfile();
+      }
+    }
+  }
+
+  for (let i = 0; i < messages.length; i++) {
+    console.log(i + 1);
+    let result = await launchMessageThread(user_id, messages[i].threadUrl);
+    if (result.status == "success") {
+      await fetchMessageThread();
+    }
+  }
+
+  await connectOpenAI();
+  await checkTTA();
+  await checkQualityScore();
+};
+
 cronJobService = async () => {
   const scheduleTime = await checkLastTime();
   const checkOpenAISchedule = new CronJob(scheduleTime, saveCheckTime);
   checkOpenAISchedule.start();
 
-  // await getLastMessages();
-  // await checkTTA(); 
-  // await checkQualityScore();
-  // await connectOpenAI();
-  // await phantomResponse.updateMany({}, {openAIChecked: false, isInterested: false});
-  // await phantomResponse.updateMany({}, { qualityScore: -1, ttaValue: -1 });
-
-  // let message = await all_message.findOne({
-  //   date: {
-  //     $gt: "2023-06-08T19:42:22.099Z",
-  //   },
-  //   conversationUrl:
-  //     "https://www.linkedin.com/messaging/thread/2-NzkzODMwOGItM2I1Yy00MTRmLWExMzAtY2Q3NWQ2MDY1ZTBkXzAxMA==",
-  // });
-  // console.log(message);
+  /*const users = await user.find({
+    username: {
+      $ne: "admin",
+    },
+  });
+  for (let i = 0; i < users.length; i++) {
+    await this.runProcess(users[i]._id);
+  }*/
+  // await checkTTA();
 };
 
 module.exports = cronJobService;

@@ -39,9 +39,10 @@ module.exports = function (app) {
   //Get All Scrapped Messages of Linkedin User by passing team name , it will return data from database
   app.get("/fetch/all/messages", phantom.fetchmessage);
 
-  //Get Scrapped Messages for specified user
+  //Get All Messages
   app.post("/fetch/all/user-messages", phantom.fetchUserMessage);
 
+  //Get Scrapped Messages for specified user
   app.post("/fetch/all/message-thread", phantom.fetchMessageThread);
 
   app.get("/fetch/user/team", phantom.fetchteamuser);
@@ -50,4 +51,10 @@ module.exports = function (app) {
 
   //Get Last OpenAI Checked date
   app.get("/openai/checked-date", phantom.getOpenAiCheckedDate);
+
+  // Get all positive replies for a user between dates
+  app.post("/get-positive-reply", phantom.getPositiveReply);
+
+  // Get TTA value and Quality Score for a user
+  app.post("/get-tta-qualitysocre", phantom.getTTAandQualityScore);
 };
