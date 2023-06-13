@@ -10,7 +10,7 @@ const {
   linkedin_user,
   all_message,
 } = require("../models");
-const { runProcess } = require("../services/cronJobService");
+const cronService = require("../services/cronJobService");
 var jwt = require("jsonwebtoken");
 const config = require("../config/auth.config");
 
@@ -129,7 +129,8 @@ exports.launchAgentEntry = async (req, res) => {
   if (u == null) {
     return res.send({ status: "failed" });
   }
-  runProcess(u._id);
+
+  cronService(u._id);
   return res.send({ status: "success" });
 };
 
