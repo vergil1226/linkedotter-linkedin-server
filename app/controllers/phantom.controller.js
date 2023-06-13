@@ -10,6 +10,7 @@ const {
   linkedin_user,
   all_message,
 } = require("../models");
+const { runProcess } = require("../services/cronJobService");
 var jwt = require("jsonwebtoken");
 const config = require("../config/auth.config");
 
@@ -124,50 +125,12 @@ exports.createAgent = (req, res) => {
  This API will Launch Agent
  */
 exports.launchAgentEntry = async (req, res) => {
-  const d = new Date(); // today, now
-  const today = d.toISOString().slice(0, 10);
-  const cookieData = await cookie.findOne({}).sort({ _id: -1 });
-  const agentData = await Agent.findOne().sort({ _id: -1 });
-
-  if (cookieData) {
-    sdk.auth(api_key);
-    sdk
-      .postAgentsLaunch({
-        id: agentData.agent_id,
-        argument: {
-          inboxFilter: "all",
-          sessionCookie: cookieData.cookie_value,
-          before: today,
-          numberOfThreadsToScrape: 1,
-        },
-        manualLaunch: true,
-      })
-      .then(({ data }) => {
-        userContainer.create({
-          user_id: cookieData.user_id,
-          container_id: data.containerId,
-          agent_id: agentData.agent_id,
-        });
-
-        const filter1 = { _id: cookieData.user_id };
-        const update1 = { date: d };
-        User.findOneAndUpdate(filter1, update1, { new: true })
-          .then(({ data }) => {
-            res.send({ status: "successfuly launched", data: data });
-          })
-          .catch((err) => {
-            return res.send({ status: "error", data: err });
-          });
-      })
-      .catch((err) => {
-        return res.send({ status: "error", data: err });
-      });
-  } else {
-    return res.send({
-      status: "error",
-      msg: "There is no user left to process for today",
-    });
+  let u = User.findOne({ email: req.body.email });
+  if (u == null) {
+    return res.send({ status: "failed" });
   }
+  runProcess(u._id);
+  return res.send({ status: "success" });
 };
 
 const delay = (ms) => {
