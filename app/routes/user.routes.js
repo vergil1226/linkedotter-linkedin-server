@@ -53,8 +53,8 @@ module.exports = function (app) {
   app.get("/openai/checked-date", phantom.getOpenAiCheckedDate);
 
   // Get all positive replies for a user between dates
-  app.post("/get-positive-reply", phantom.getPositiveReply);
+  app.get("/get-positive-reply", phantom.getPositiveReply);
 
   // Get TTA value and Quality Score for a user
-  app.post("/get-tta-qualitysocre", phantom.getTTAandQualityScore);
+  app.get("/get-tta-qualityscore", phantom.getTTAandQualityScore);
 };

@@ -610,9 +610,9 @@ Ths API returns positive replies for a specified user
 */
 exports.getPositiveReply = async (req, res) => {
   try {
-    if (req.body.email && req.body.startDate && req.body.endDate) {
+    if (req.query.email && req.query.startDate && req.query.endDate) {
       const user = await User.findOne({
-        email: req.body.email,
+        email: req.query.email,
       });
 
       if (user) {
@@ -620,8 +620,8 @@ exports.getPositiveReply = async (req, res) => {
           user_id: user._id,
           isInterested: true,
           lastMessageDate: {
-            $gte: new Date(req.body.startDate),
-            $lte: new Date(req.body.endDate),
+            $gte: new Date(req.query.startDate),
+            $lte: new Date(req.query.endDate),
           },
         });
 
@@ -640,9 +640,9 @@ Ths API returns TTA value and Quality Score for a specified user
 */
 exports.getTTAandQualityScore = async (req, res) => {
   try {
-    if (req.body.email) {
+    if (req.query.email) {
       const response = await User.findOne({
-        email: req.body.email,
+        email: req.query.email,
       });
 
       return res.send({
