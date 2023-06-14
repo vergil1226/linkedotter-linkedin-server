@@ -225,7 +225,6 @@ exports.runProcess = async (user_id) => {
   }
 
   for (let i = 0; i < messages.length; i++) {
-    console.log(i + 1);
     let result = await launchMessageThread(user_id, messages[i].threadUrl);
     if (result.status == "success") {
       await fetchMessageThread();

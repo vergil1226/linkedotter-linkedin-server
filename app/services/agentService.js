@@ -19,6 +19,7 @@ const delay = (ms) => {
 exports.fetchProfile = async () => {
   let return_obj = {};
 
+  console.log("Starting fetch profile");
   // call api to fetch data from profile agent
   await sdk
     .getAgentsFetchOutput({ id: "8602125783871801" })
@@ -96,6 +97,7 @@ exports.fetchProfile = async () => {
       };
     });
 
+  console.log(return_obj);
   return return_obj;
 };
 
@@ -107,6 +109,7 @@ exports.launchProfileAgent = async (user_id, profileLink) => {
   // authenticate to the phantom api with api key
   sdk.auth(api_key);
 
+  console.log("Starting launch profile agent");
   // launch profile scrapper agent
   await sdk
     .postAgentsLaunch({
@@ -132,6 +135,7 @@ exports.launchProfileAgent = async (user_id, profileLink) => {
       };
     });
 
+  console.log(return_obj);
   return return_obj;
 };
 
@@ -179,6 +183,7 @@ exports.launchAgentEntry = async (user_id) => {
     };
   }
 
+  console.log(return_obj);
   return return_obj;
 };
 
@@ -186,6 +191,7 @@ exports.launchAgentEntry = async (user_id) => {
 exports.fetchInbox = async (user_id, agent_id) => {
   let return_obj = {};
 
+  console.log("Starting fetch inbox");
   sdk.auth(api_key);
   await sdk
     .getAgentsFetchOutput({ id: agent_id })
@@ -263,6 +269,7 @@ exports.fetchInbox = async (user_id, agent_id) => {
       return_obj.message = err.message;
     });
 
+  console.log(return_obj);
   return return_obj;
 };
 
@@ -270,6 +277,7 @@ exports.fetchInbox = async (user_id, agent_id) => {
 exports.launchMessageThread = async (user_id, threadUrl) => {
   const cookieData = await cookie.findOne({ user_id }).sort({ _id: -1 });
 
+  console.log("Launching message thread agent");
   sdk.auth(api_key);
   await sdk
     .postAgentsLaunch({
@@ -295,11 +303,14 @@ exports.launchMessageThread = async (user_id, threadUrl) => {
       };
     });
 
+  console.log(return_obj);
   return return_obj;
 };
 
 // fetch data from message thread scrapper agent
 exports.fetchMessageThread = async () => {
+  console.log("Fetching message thread");
+
   sdk.auth(api_key);
   // call fetch agent output api
   await sdk
@@ -373,5 +384,6 @@ exports.fetchMessageThread = async () => {
       };
     });
 
+  console.log(return_obj);
   return return_obj;
 };
