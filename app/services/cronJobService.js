@@ -206,7 +206,7 @@ const saveCheckTime = async () => {
   }
 };
 
-exports.runProcess = async (user_id) => {
+runProcess = async (user_id) => {
   let ret = await launchAgentEntry(user_id);
   if (ret.status == "failed") return;
   ret = await fetchInbox(user_id, "3954653220496213");
@@ -252,4 +252,4 @@ cronJobService = async () => {
   // await checkTTA();
 };
 
-module.exports = cronJobService;
+module.exports = {runProcess, cronJobService};
