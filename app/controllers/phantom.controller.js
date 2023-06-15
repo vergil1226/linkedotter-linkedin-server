@@ -125,7 +125,7 @@ exports.createAgent = (req, res) => {
  This API will Launch Agent
  */
 exports.launchAgentEntry = async (req, res) => {
-  let u = User.findOne({ email: req.body.email });
+  let u = await User.findOne({ email: req.body.email });
   if (u == null) {
     return res.send({ status: "failed" });
   }
