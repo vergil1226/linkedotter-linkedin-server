@@ -199,7 +199,7 @@ exports.fetchInbox = async (user_id, agent_id) => {
       // if agent status is running, delay 2s and call function again
       if (data.status === "running") {
         await delay(2000);
-        return_obj = await this.fetchInbox(agent_id);
+        return_obj = await this.fetchInbox(user_id, agent_id);
         return;
       }
 
