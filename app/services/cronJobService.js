@@ -105,25 +105,27 @@ const connectOpenAI = async () => {
   }
 };
 
-const checkQualityScore = async () => {
+const checkQualityScore = async (user_id) => {
   try {
     let ret = await phantomResponse.find({
       isInterested: true,
+      user_id
     });
 
-    let score = 0;
+    let score = 0,
+      count = 0;
     for (let i = 0; i < ret.length; i++) {
       if (ret[i].qualityScore != -1) {
         score += ret[i].qualityScore;
         continue;
       }
-      let prompt = `You are an expert SDR, BDR and sales coach. Look at this conversation, and provide the score from 0-100 for how good the answer of ${ret[i].firstnameFrom} was. Do not self reference. Your answer should only contain the score and nothing else. This is the conversation.\n`;
+      let prompt = `You are an expert SDR, BDR and sales coach. Look at this conversation, and provide the score from 0-100 for how good the answer of me was. Do not self reference. Your answer should only contain the score and nothing else. This is the conversation.\n`;
       let messageThread = await all_message.find({
         url: ret[i].threadUrl,
       });
       for (let j = 0; j < messageThread.length; j++) {
         let message = messageThread[j].message.replace(/\n/g, " ");
-        if (messageThread[j].connectionDegree === "You") {
+        if (messageThread[j].firstName !== ret[i].firstnameFrom) {
           prompt += `me: ${message}\n`;
         } else {
           prompt += `${messageThread[j].firstName}: ${message}\n`;
@@ -139,27 +141,30 @@ const checkQualityScore = async () => {
         presence_penalty: 0,
       });
       if (response?.data?.choices?.length) {
-        let val = parseInt(response?.data?.choices[0].text);
+        let val = parseInt(response?.data?.choices[0].text.replace(/\D/g, ""));
         score += val;
         await phantomResponse.updateOne(
           { _id: ret[i]._id },
           { qualityScore: val }
         );
+        count++;
       }
     }
+    if (count == 0) return;
     await user.updateOne(
-      { _id: "647e65ced03c930014645ffe" },
-      { $set: { quality_score: score / ret.length } }
+      { _id: user_id },
+      { $set: { quality_score: score / count } }
     );
   } catch (err) {
     console.log(err.message);
   }
 };
 
-const checkTTA = async () => {
+const checkTTA = async (user_id) => {
   try {
     let ret = await phantomResponse.find({
       isInterested: true,
+      user_id
     });
     let tta = 0,
       count = 0;
@@ -171,14 +176,16 @@ const checkTTA = async () => {
         conversationUrl: ret[i].threadUrl,
       });
       if (message != null) {
-        tta += (moment(message.date) - moment(ret[i].lastMessageDate)).hour();
+        tta += moment
+          .duration(moment(message.date).diff(moment(ret[i].lastMessageDate)))
+          .asHours();
         count++;
       }
     }
 
     if (count == 0) return;
     await user.updateOne(
-      { _id: "647e65ced03c930014645ffe" },
+      { _id: user_id },
       { $set: { tta_value: tta / count } }
     );
   } catch (err) {
@@ -217,14 +224,18 @@ runProcess = async (user_id) => {
       userLink: messages[i].lastMessageFromUrl,
     });
     if (pro == null) {
-      let result = await launchProfileAgent(messages[i].lastMessageFromUrl);
+      let result = await launchProfileAgent(
+        user_id,
+        messages[i].lastMessageFromUrl
+      );
       if ((result.status = "success")) {
         await fetchProfile();
       }
     }
   }
 
-  for (let i = 0; i < messages.length; i++) {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    console.log(i);
     let result = await launchMessageThread(user_id, messages[i].threadUrl);
     if (result.status == "success") {
       await fetchMessageThread();
@@ -232,8 +243,8 @@ runProcess = async (user_id) => {
   }
 
   await connectOpenAI();
-  await checkTTA();
-  await checkQualityScore();
+  await checkTTA(user_id);
+  await checkQualityScore(user_id);
 };
 
 cronJobService = async () => {
@@ -241,6 +252,8 @@ cronJobService = async () => {
   const checkOpenAISchedule = new CronJob(scheduleTime, saveCheckTime);
   checkOpenAISchedule.start();
 
+  // await phantomResponse.updateMany({}, {qualityScore: -1});
+  // await runProcess("648ff2235604ed00140de2ac");
   /*const users = await user.find({
     username: {
       $ne: "admin",
@@ -252,4 +265,4 @@ cronJobService = async () => {
   // await checkTTA();
 };
 
-module.exports = {runProcess, cronJobService};
+module.exports = { runProcess, cronJobService };
