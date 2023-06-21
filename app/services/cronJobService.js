@@ -202,7 +202,7 @@ const saveCheckTime = async () => {
       },
     });
     for (let i = 0; i < users.length; i++) {
-      await this.runProcess(users._id);
+      await runProcess(users._id);
     }
 
     const currentTime = moment().format("YYYY-MM-DD HH:mm:ss");
