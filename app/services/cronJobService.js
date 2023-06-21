@@ -109,7 +109,7 @@ const checkQualityScore = async (user_id) => {
   try {
     let ret = await phantomResponse.find({
       isInterested: true,
-      user_id
+      user_id,
     });
 
     let score = 0,
@@ -164,17 +164,20 @@ const checkTTA = async (user_id) => {
   try {
     let ret = await phantomResponse.find({
       isInterested: true,
-      user_id
+      user_id,
     });
     let tta = 0,
       count = 0;
     for (let i = 0; i < ret.length; i++) {
-      let message = await all_message.findOne({
-        date: {
-          $gt: ret[i].lastMessageDate,
-        },
-        conversationUrl: ret[i].threadUrl,
-      });
+      let message = await all_message
+        .find({
+          date: {
+            $gt: ret[i].lastMessageDate,
+          },
+          conversationUrl: ret[i].threadUrl,
+        })
+        .sort({ date: 1 })
+        .limit(1);
       if (message != null) {
         tta += moment
           .duration(moment(message.date).diff(moment(ret[i].lastMessageDate)))
