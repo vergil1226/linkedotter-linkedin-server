@@ -49,13 +49,16 @@ const checkLastTime = async () => {
   }
 };
 
+// check conversation if it is interested using openai
 const connectOpenAI = async () => {
   try {
+    // find all unchecked and received conversations
     let ret = await phantomResponse.find({
       openAIChecked: false,
       isLastMessageFromMe: false,
     });
 
+    // for each conversation check if interested
     for (let i = 0; i < ret.length; i++) {
       let prompt =
         "I sell marketing and outreach sevices. Based on the following conversation -  is this person interested in having a conversion with me as prospective buyer, is interested in purchasing my services, or interested in speaking to me further (even if they dont want a sales pitch)? Answer only is YES or NO. Do not explain, do not self reference. Only provide this one word answer. This is the conversation.\n";
@@ -63,8 +66,9 @@ const connectOpenAI = async () => {
       let messages = await all_message.find({
         conversationUrl: ret[i].threadUrl,
       });
-
       if (messages == null) continue;
+
+      // building whole conversation
       for (let j = 0; j < messages.length; j++) {
         let message = messages[j].message.replace(/\n/g, " ");
         if (messages[j].firstName === ret[i].firstnameFrom) {
@@ -74,6 +78,7 @@ const connectOpenAI = async () => {
         }
       }
 
+      // connect to openai
       try {
         let apiResponse = false;
         const response = await openai.createCompletion({
@@ -105,6 +110,7 @@ const connectOpenAI = async () => {
   }
 };
 
+// get quality score for a user
 const checkQualityScore = async (user_id) => {
   try {
     let ret = await phantomResponse.find({
@@ -132,22 +138,27 @@ const checkQualityScore = async (user_id) => {
         }
       }
 
-      const response = await openai.createCompletion({
-        model: "text-davinci-003",
-        prompt,
-        max_tokens: 3000,
-        top_p: 1,
-        frequency_penalty: 0.5,
-        presence_penalty: 0,
-      });
-      if (response?.data?.choices?.length) {
-        let val = parseInt(response?.data?.choices[0].text.replace(/\D/g, ""));
-        score += val;
-        await phantomResponse.updateOne(
-          { _id: ret[i]._id },
-          { qualityScore: val }
-        );
-        count++;
+      try {
+        const response = await openai.createCompletion({
+          model: "text-davinci-003",
+          prompt,
+          max_tokens: 3000,
+          top_p: 1,
+          frequency_penalty: 0.5,
+          presence_penalty: 0,
+        });
+        if (response?.data?.choices?.length) {
+          let val =
+            parseInt(response?.data?.choices[0].text.replace(/\D/g, "")) % 100;
+          score += val;
+          await phantomResponse.updateOne(
+            { _id: ret[i]._id },
+            { qualityScore: val }
+          );
+          count++;
+        }
+      } catch (error) {
+        console.log(error);
       }
     }
     if (count == 0) return;
@@ -160,6 +171,7 @@ const checkQualityScore = async (user_id) => {
   }
 };
 
+// get tta value for a user
 const checkTTA = async (user_id) => {
   try {
     let ret = await phantomResponse.find({
@@ -216,11 +228,14 @@ const saveCheckTime = async () => {
   }
 };
 
+// launch inbox scrapper, profile scrapper and message thread scrapper for a user
 runProcess = async (user_id) => {
+  // get the updated inbox messages
   let ret = await launchAgentEntry(user_id);
   if (ret.status == "failed") return;
   ret = await fetchInbox(user_id, "3954653220496213");
 
+  // for each messages, get the profile of the owner
   let messages = ret.messages;
   for (let i = 0; i < messages.length; i++) {
     let pro = await linkedn_user.findOne({
@@ -237,6 +252,7 @@ runProcess = async (user_id) => {
     }
   }
 
+  // fore each messages, get the whole conversation and save to db
   for (let i = messages.length - 1; i >= 0; i--) {
     console.log(i);
     let result = await launchMessageThread(user_id, messages[i].threadUrl);
@@ -250,6 +266,7 @@ runProcess = async (user_id) => {
   await checkQualityScore(user_id);
 };
 
+// service that runs once everyday
 cronJobService = async () => {
   const scheduleTime = await checkLastTime();
   const checkOpenAISchedule = new CronJob(scheduleTime, saveCheckTime);
