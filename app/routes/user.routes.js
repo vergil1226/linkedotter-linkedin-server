@@ -57,4 +57,7 @@ module.exports = function (app) {
 
   // Get TTA value and Quality Score for a user
   app.get("/get-tta-qualityscore", phantom.getTTAandQualityScore);
+
+  // Get All Teams
+  app.get("/team", phantom.getTeam);
 };

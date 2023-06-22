@@ -12,4 +12,5 @@ db.phantom_link = require("./phantomlink.model");
 db.all_message = require("./all_message.model");
 db.message_thread = require("./message_thread.model");
 db.phantom_agent = require("./phantom_agent.model");
+db.team = require("./team.model");
 module.exports = db;

@@ -9,8 +9,9 @@ const {
   openAiCheck,
   linkedin_user,
   all_message,
+  team,
 } = require("../models");
-const {runProcess} = require("../services/cronJobService");
+const { runProcess } = require("../services/cronJobService");
 var jwt = require("jsonwebtoken");
 const config = require("../config/auth.config");
 
@@ -556,8 +557,9 @@ exports.fetchMessageThread = async (req, res) => {
 
 exports.fetchteamuser = async (req, res) => {
   try {
+    console.log(req.query.team);
     if (req.query.team) {
-      var result = await User.find({ team: req.query.team });
+      var result = await User.find({ team_id: req.query.team });
 
       return res.send({ success: "true", msg: "", data: result });
     } else {
@@ -637,7 +639,7 @@ exports.getPositiveReply = async (req, res) => {
 };
 
 /*
-Ths API returns TTA value and Quality Score for a specified user
+This API returns TTA value and Quality Score for a specified user
 */
 exports.getTTAandQualityScore = async (req, res) => {
   try {
@@ -653,6 +655,19 @@ exports.getTTAandQualityScore = async (req, res) => {
     }
 
     return res.send({ success: "false", msg: "not found" });
+  } catch (error) {
+    return res.send({ success: "false", msg: error.message, data: [] });
+  }
+};
+
+/*
+This API returns all teams' name and number
+*/
+exports.getTeam = async (req, res) => {
+  try {
+    const response = await team.find({});
+
+    return res.send({ success: "true", data: response });
   } catch (error) {
     return res.send({ success: "false", msg: error.message, data: [] });
   }
