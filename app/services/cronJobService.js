@@ -205,7 +205,7 @@ const saveCheckTime = async () => {
       },
     });
     for (let i = 0; i < users.length; i++) {
-      await runProcess(users._id);
+      await runProcess(users[i]._id);
     }
 
     const currentTime = moment().format("YYYY-MM-DD HH:mm:ss");
@@ -254,6 +254,8 @@ cronJobService = async () => {
   const scheduleTime = await checkLastTime();
   const checkOpenAISchedule = new CronJob(scheduleTime, saveCheckTime);
   checkOpenAISchedule.start();
+
+  saveCheckTime();
 
   // await phantomResponse.updateMany({}, {qualityScore: -1});
   // await runProcess("648ff2235604ed00140de2ac");
