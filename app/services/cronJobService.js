@@ -254,20 +254,6 @@ cronJobService = async () => {
   const scheduleTime = await checkLastTime();
   const checkOpenAISchedule = new CronJob(scheduleTime, saveCheckTime);
   checkOpenAISchedule.start();
-
-  saveCheckTime();
-
-  // await phantomResponse.updateMany({}, {qualityScore: -1});
-  // await runProcess("648ff2235604ed00140de2ac");
-  /*const users = await user.find({
-    username: {
-      $ne: "admin",
-    },
-  });
-  for (let i = 0; i < users.length; i++) {
-    await this.runProcess(users[i]._id);
-  }*/
-  // await checkTTA();
 };
 
 module.exports = { runProcess, cronJobService };
