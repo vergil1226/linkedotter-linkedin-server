@@ -60,6 +60,13 @@ const connectOpenAI = async () => {
 
     // for each conversation check if interested
     for (let i = 0; i < ret.length; i++) {
+      const checked = await phantomResponse.findOne({
+        openAIChecked: true,
+        threadUrl: ret[i].threadUrl,
+      });
+
+      if (checked) continue;
+
       let prompt =
         "I sell marketing and outreach sevices. Based on the following conversation -  is this person interested in having a conversion with me as prospective buyer, is interested in purchasing my services, or interested in speaking to me further (even if they dont want a sales pitch)? Answer only is YES or NO. Do not explain, do not self reference. Only provide this one word answer. This is the conversation.\n";
 
@@ -181,6 +188,11 @@ const checkTTA = async (user_id) => {
     let tta = 0,
       count = 0;
     for (let i = 0; i < ret.length; i++) {
+      if (ret[i].ttaValue != -1) {
+        score += ret[i].ttaValue;
+        continue;
+      }
+      
       let message = await all_message
         .find({
           date: {
@@ -191,9 +203,14 @@ const checkTTA = async (user_id) => {
         .sort({ date: 1 })
         .limit(1);
       if (message != null) {
-        tta += moment
+        let val =  moment
           .duration(moment(message.date).diff(moment(ret[i].lastMessageDate)))
           .asHours();
+        tta += val;
+        await phantomResponse.updateOne(
+          { _id: ret[i]._id },
+          { ttaValue: val }
+        );
         count++;
       }
     }
